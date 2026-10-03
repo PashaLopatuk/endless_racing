@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-import { COLOR_JITTER } from "../constants/palette";
+import { COLOR_RANDOMIZE } from "../constants/palette";
 import type { Rng } from "../types";
 import { clamp } from "./math";
 
@@ -12,12 +12,22 @@ const spread = (random: Rng, amount: number): number => {
   return (random() * 2 - 1) * amount;
 };
 
-/** Returns `hex` with a small random hue/saturation/lightness shift. */
-export const jitterHex = (hex: number, random: Rng): number => {
+export const randomizeHex = (hex: number, random: Rng): number => {
   scratch.setHex(hex).getHSL(hsl);
-  const hue = (hsl.h + spread(random, COLOR_JITTER.HUE) + 1) % 1;
-  const saturation = clamp(hsl.s + spread(random, COLOR_JITTER.SATURATION), 0, 1);
-  const lightness = clamp(hsl.l + spread(random, COLOR_JITTER.LIGHTNESS), 0, 1);
+
+  const hue = (hsl.h + spread(random, COLOR_RANDOMIZE.HUE) + 1) % 1;
+  const saturation = clamp(
+    hsl.s + spread(random, COLOR_RANDOMIZE.SATURATION),
+    0,
+    1,
+  );
+
+  const lightness = clamp(
+    hsl.l + spread(random, COLOR_RANDOMIZE.LIGHTNESS),
+    0,
+    1,
+  );
+
   return scratch.setHSL(hue, saturation, lightness).getHex();
 };
 

@@ -8,7 +8,10 @@ import type { GameCallbacks, GameController } from "./types";
  * Composition root. Boots Rapier asynchronously, then runs a `GameSession` on the animation loop.
  * Safe to dispose at any point, including before the physics engine has finished loading.
  */
-export const createGame = (container: HTMLElement, callbacks: GameCallbacks): GameController => {
+export const createGame = (
+  container: HTMLElement,
+  callbacks: GameCallbacks,
+): GameController => {
   let isDisposed = false;
   let session: GameSession | null = null;
   let stopLoop: (() => void) | null = null;
@@ -20,7 +23,9 @@ export const createGame = (container: HTMLElement, callbacks: GameCallbacks): Ga
   const shutdown = () => {
     stopLoop?.();
     stopLoop = null;
+
     window.removeEventListener("resize", onResize);
+
     session?.dispose();
     session = null;
   };
@@ -29,6 +34,7 @@ export const createGame = (container: HTMLElement, callbacks: GameCallbacks): Ga
     if (isDisposed) {
       return;
     }
+
     console.error(`${GAME_LOG.PREFIX} ${message}`, error);
     shutdown();
     callbacks.onError(error);
@@ -39,9 +45,12 @@ export const createGame = (container: HTMLElement, callbacks: GameCallbacks): Ga
       session = createGameSession({ container, physics, callbacks });
     } catch (error) {
       physics.dispose();
+
       throw error;
     }
+
     window.addEventListener("resize", onResize);
+
     stopLoop = startLoop((dt) => {
       try {
         session?.frame(dt);
@@ -49,16 +58,19 @@ export const createGame = (container: HTMLElement, callbacks: GameCallbacks): Ga
         fail(GAME_LOG.FRAME_FAILED, error);
       }
     });
+
     callbacks.onReady();
   };
 
   const boot = async () => {
     try {
       const physics = await createPhysics();
+
       if (isDisposed) {
         physics.dispose();
         return;
       }
+
       startSession(physics);
     } catch (error) {
       fail(GAME_LOG.BOOT_FAILED, error);

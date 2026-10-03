@@ -3,7 +3,14 @@ import * as RAPIER from "@dimforge/rapier3d-compat";
 
 import { createVehicleModel, type VehicleModel } from "./assets/vehicles";
 import { BODY_KIND } from "./constants/kinds";
-import { INITIAL_TRAFFIC, NPC_BODY, NPC_PAINT_PALETTE, PARKING_ZONE, TRAFFIC, type TrafficSeed } from "./constants/traffic";
+import {
+  INITIAL_TRAFFIC,
+  NPC_BODY,
+  NPC_PAINT_PALETTE,
+  PARKING_ZONE,
+  TRAFFIC,
+  type TrafficSeed,
+} from "./constants/traffic";
 import { VEHICLE_KINDS } from "./constants/vehicles";
 import { CAR_SIZE, CAR_Y, LANE } from "./constants/world";
 import { getLaneCenterX } from "./util/lane";
@@ -51,44 +58,69 @@ const parkingSpot = (id: number): RAPIER.Vector => ({
 
 const createNpcBody = (world: RAPIER.World, id: number): RAPIER.RigidBody => {
   const spot = parkingSpot(id);
-  const body = world.createRigidBody(
-    RAPIER.RigidBodyDesc.dynamic()
-      .setTranslation(spot.x, spot.y, spot.z)
-      .setGravityScale(0)
-      .enabledTranslations(true, false, true)
-      .lockRotations()
-      .setLinearDamping(0)
-      .setCanSleep(false)
-      .setCcdEnabled(true)
-      .setEnabled(false)
-      .setUserData({ kind: BODY_KIND.NPC, id }),
-  );
+
+  const rigidBodyDescription = RAPIER.RigidBodyDesc.dynamic()
+    .setTranslation(spot.x, spot.y, spot.z)
+    .setGravityScale(0)
+    .enabledTranslations(true, false, true)
+    .lockRotations()
+    .setLinearDamping(0)
+    .setCanSleep(false)
+    .setCcdEnabled(true)
+    .setEnabled(false)
+    .setUserData({ kind: BODY_KIND.NPC, id });
+
+  const body = world.createRigidBody(rigidBodyDescription);
+
   world.createCollider(
-    RAPIER.ColliderDesc.cuboid(CAR_SIZE.HALF_WIDTH, CAR_SIZE.HALF_HEIGHT, CAR_SIZE.HALF_LENGTH)
+    RAPIER.ColliderDesc.cuboid(
+      CAR_SIZE.HALF_WIDTH,
+      CAR_SIZE.HALF_HEIGHT,
+      CAR_SIZE.HALF_LENGTH,
+    )
       .setDensity(NPC_BODY.DENSITY)
       .setFriction(NPC_BODY.FRICTION)
       .setRestitution(NPC_BODY.RESTITUTION)
       .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS),
     body,
   );
+
   return body;
 };
 
-const createNpcSlot = (world: RAPIER.World, scene: THREE.Scene, index: number): NpcSlot => {
+const createNpcSlot = (
+  world: RAPIER.World,
+  scene: THREE.Scene,
+  index: number,
+): NpcSlot => {
   const id = TRAFFIC.FIRST_ID + index;
+
   const model = createVehicleModel({
     kind: VEHICLE_KINDS[index % VEHICLE_KINDS.length],
     paint: NPC_PAINT_PALETTE[index % NPC_PAINT_PALETTE.length],
     lampBrightness: TRAFFIC.LAMP_BRIGHTNESS_MIN,
     hasSpotlights: false,
   });
+
   const spot = parkingSpot(id);
+
   model.object.position.set(spot.x, spot.y, spot.z);
   scene.add(model.object);
-  return { id, body: createNpcBody(world, id), model, lane: 0, cruiseSpeed: TRAFFIC.MIN_SPEED, isActive: false };
+
+  return {
+    id,
+    body: createNpcBody(world, id),
+    model,
+    lane: 0,
+    cruiseSpeed: TRAFFIC.MIN_SPEED,
+    isActive: false,
+  };
 };
 
-const activateSlot = (slot: NpcSlot, { lane, z, cruiseSpeed, paint, lampBrightness }: NpcPlacement) => {
+const activateSlot = (
+  slot: NpcSlot,
+  { lane, z, cruiseSpeed, paint, lampBrightness }: NpcPlacement,
+) => {
   slot.lane = lane;
   slot.cruiseSpeed = cruiseSpeed;
   slot.isActive = true;
@@ -101,6 +133,7 @@ const activateSlot = (slot: NpcSlot, { lane, z, cruiseSpeed, paint, lampBrightne
 
 const parkSlot = (slot: NpcSlot) => {
   const spot = parkingSpot(slot.id);
+
   slot.isActive = false;
   slot.body.setLinvel(ZERO_VELOCITY, true);
   slot.body.setTranslation(spot, true);
@@ -110,8 +143,15 @@ const parkSlot = (slot: NpcSlot) => {
 
 const cruise = (slot: NpcSlot, playerSpeed: number) => {
   const velocity = slot.body.linvel();
-  const closing = Math.max(TRAFFIC.MIN_CLOSING_SPEED, playerSpeed - slot.cruiseSpeed);
-  slot.body.setLinvel({ x: velocity.x * TRAFFIC.LATERAL_DAMPING, y: 0, z: -closing }, true);
+  const closing = Math.max(
+    TRAFFIC.MIN_CLOSING_SPEED,
+    playerSpeed - slot.cruiseSpeed,
+  );
+
+  slot.body.setLinvel(
+    { x: velocity.x * TRAFFIC.LATERAL_DAMPING, y: 0, z: -closing },
+    true,
+  );
 };
 
 const syncSlotMesh = (slot: NpcSlot) => {
@@ -119,13 +159,19 @@ const syncSlotMesh = (slot: NpcSlot) => {
   slot.model.object.position.set(translation.x, translation.y, translation.z);
 };
 
-export const createTraffic = (world: RAPIER.World, scene: THREE.Scene): Traffic => {
-  const slots = Array.from({ length: TRAFFIC.POOL_SIZE }, (_, index) => createNpcSlot(world, scene, index));
+export const createTraffic = (
+  world: RAPIER.World,
+  scene: THREE.Scene,
+): Traffic => {
+  const slots = Array.from({ length: TRAFFIC.POOL_SIZE }, (_, index) =>
+    createNpcSlot(world, scene, index),
+  );
   const slotsById = new Map(slots.map((slot) => [slot.id, slot]));
   const parkedScratch: NpcSlot[] = [];
   const openLanesScratch: number[] = [];
   const bandLanes = new Array<boolean>(LANE.COUNT).fill(false);
   const blockedLanes = new Array<boolean>(LANE.COUNT).fill(false);
+
   let activeCount = 0;
   let paintCursor = 0;
   let spawnTimer: number = TRAFFIC.INITIAL_SPAWN_DELAY;
@@ -145,9 +191,20 @@ export const createTraffic = (world: RAPIER.World, scene: THREE.Scene): Traffic 
     if (!slot) {
       return;
     }
+
     const paint = NPC_PAINT_PALETTE[paintCursor % NPC_PAINT_PALETTE.length];
+
     paintCursor += 1;
-    activateSlot(slot, { ...seed, paint, lampBrightness: randomRange(TRAFFIC.LAMP_BRIGHTNESS_MIN, TRAFFIC.LAMP_BRIGHTNESS_MAX) });
+
+    activateSlot(slot, {
+      ...seed,
+      paint,
+      lampBrightness: randomRange(
+        TRAFFIC.LAMP_BRIGHTNESS_MIN,
+        TRAFFIC.LAMP_BRIGHTNESS_MAX,
+      ),
+    });
+
     activeCount += 1;
   };
 
@@ -161,6 +218,7 @@ export const createTraffic = (world: RAPIER.World, scene: THREE.Scene): Traffic 
     bandLanes.fill(false);
     blockedLanes.fill(false);
     openLanesScratch.length = 0;
+
     for (const slot of slots) {
       if (!slot.isActive) {
         continue;
@@ -169,15 +227,19 @@ export const createTraffic = (world: RAPIER.World, scene: THREE.Scene): Traffic 
       bandLanes[slot.lane] ||= distance < TRAFFIC.SPAWN_BAND;
       blockedLanes[slot.lane] ||= distance < TRAFFIC.MIN_LANE_GAP;
     }
+
     const bandCount = bandLanes.filter(Boolean).length;
+
     if (bandCount >= LANE.COUNT - TRAFFIC.MIN_FREE_LANES) {
       return openLanesScratch;
     }
+
     for (let lane = 0; lane < LANE.COUNT; lane += 1) {
       if (!bandLanes[lane] && !blockedLanes[lane]) {
         openLanesScratch.push(lane);
       }
     }
+
     return openLanesScratch;
   };
 
@@ -185,12 +247,19 @@ export const createTraffic = (world: RAPIER.World, scene: THREE.Scene): Traffic 
     if (activeCount >= TRAFFIC.MAX_ACTIVE) {
       return;
     }
+
     const z = TRAFFIC.SPAWN_Z + randomRange(0, TRAFFIC.SPAWN_Z_JITTER);
     const openLanes = collectOpenLanes(z);
+
     if (openLanes.length === 0) {
       return;
     }
-    spawn({ lane: pick(Math.random, openLanes), z, cruiseSpeed: randomRange(TRAFFIC.MIN_SPEED, TRAFFIC.MAX_SPEED) });
+
+    spawn({
+      lane: pick(Math.random, openLanes),
+      z,
+      cruiseSpeed: randomRange(TRAFFIC.MIN_SPEED, TRAFFIC.MAX_SPEED),
+    });
   };
 
   const seedInitial = () => {
@@ -207,21 +276,31 @@ export const createTraffic = (world: RAPIER.World, scene: THREE.Scene): Traffic 
         if (!slot.isActive) {
           continue;
         }
+
         if (slot.body.translation().z < TRAFFIC.DESPAWN_Z) {
           despawn(slot);
+
           continue;
         }
         cruise(slot, playerSpeed);
       }
+
       if (!allowSpawn) {
         return;
       }
+
       spawnTimer -= dt;
+
       if (spawnTimer > 0) {
         return;
       }
+
       trySpawnAhead();
-      spawnTimer = randomRange(TRAFFIC.SPAWN_INTERVAL_MIN, TRAFFIC.SPAWN_INTERVAL_MAX);
+
+      spawnTimer = randomRange(
+        TRAFFIC.SPAWN_INTERVAL_MIN,
+        TRAFFIC.SPAWN_INTERVAL_MAX,
+      );
     },
     sync: () => {
       for (const slot of slots) {

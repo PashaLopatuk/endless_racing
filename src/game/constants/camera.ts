@@ -1,16 +1,17 @@
 export const CAMERA = {
-  FOV: 62,
+  FOV: 52,
   FOV_MAX: 78,
   FOV_RESPONSE: 2.8,
-  FOV_EPSILON: 0.01,
+  FOV_EPSILON: 0.1,
   NEAR: 0.1,
   FAR: 320,
-  HEIGHT: 5.4,
+  HEIGHT: 10,
   BACK: 11.5,
   LOOK_AHEAD: 18,
   LOOK_HEIGHT: 1.15,
   FOLLOW: 3.2,
   FOLLOW_X_RATIO: 0.7,
+  FOLLOW_X_SPEED_RATIO: 0.7,
 } as const;
 
 export const RENDERER = {

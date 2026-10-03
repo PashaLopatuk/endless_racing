@@ -16,11 +16,20 @@ export interface Weighted {
 
 export const createRng = (seed: number): Rng => {
   let state = seed >>> 0;
+
   return () => {
     state = (state + MULBERRY.INCREMENT) | 0;
+
     let mixed = Math.imul(state ^ (state >>> MULBERRY.SHIFT_A), 1 | state);
-    mixed = (mixed + Math.imul(mixed ^ (mixed >>> MULBERRY.SHIFT_B), MULBERRY.MIX | mixed)) ^ mixed;
-    return ((mixed ^ (mixed >>> MULBERRY.SHIFT_C)) >>> 0) / MULBERRY.UINT32_RANGE;
+
+    mixed =
+      (mixed +
+        Math.imul(mixed ^ (mixed >>> MULBERRY.SHIFT_B), MULBERRY.MIX | mixed)) ^
+      mixed;
+
+    return (
+      ((mixed ^ (mixed >>> MULBERRY.SHIFT_C)) >>> 0) / MULBERRY.UINT32_RANGE
+    );
   };
 };
 
@@ -41,14 +50,20 @@ export const pick = <T>(random: Rng, items: readonly T[]): T => {
   return items[Math.floor(random() * items.length)];
 };
 
-export const pickWeighted = <T extends Weighted>(random: Rng, items: readonly T[]): T => {
+export const pickWeighted = <T extends Weighted>(
+  random: Rng,
+  items: readonly T[],
+): T => {
   const total = items.reduce((sum, item) => sum + item.weight, 0);
+
   let roll = random() * total;
+
   for (const item of items) {
     roll -= item.weight;
     if (roll < 0) {
       return item;
     }
   }
+
   return items[items.length - 1];
 };

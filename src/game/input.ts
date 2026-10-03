@@ -25,7 +25,9 @@ const isInDriveZone = (clientY: number): boolean => {
 };
 
 const isUiTarget = (target: EventTarget | null): boolean => {
-  return target instanceof Element && target.closest(INPUT.IGNORED_TARGETS) !== null;
+  return (
+    target instanceof Element && target.closest(INPUT.IGNORED_TARGETS) !== null
+  );
 };
 
 export const createTouchInput = (): TouchInput => {
@@ -35,15 +37,22 @@ export const createTouchInput = (): TouchInput => {
   let originY = 0;
 
   const onPointerDown = (event: PointerEvent) => {
-    if (isUiTarget(event.target) || activePointerId !== null || !isInDriveZone(event.clientY)) {
+    if (
+      isUiTarget(event.target) ||
+      activePointerId !== null ||
+      !isInDriveZone(event.clientY)
+    ) {
       return;
     }
+
     activePointerId = event.pointerId;
     originX = event.clientX;
     originY = event.clientY;
+
     gesture.isActive = true;
     gesture.deltaX = 0;
     gesture.deltaY = 0;
+
     event.preventDefault();
   };
 
@@ -51,6 +60,7 @@ export const createTouchInput = (): TouchInput => {
     if (event.pointerId !== activePointerId) {
       return;
     }
+
     gesture.deltaX = event.clientX - originX;
     gesture.deltaY = originY - event.clientY;
   };
@@ -59,6 +69,7 @@ export const createTouchInput = (): TouchInput => {
     if (event.pointerId !== activePointerId) {
       return;
     }
+
     activePointerId = null;
     gesture.isActive = false;
     gesture.deltaX = 0;

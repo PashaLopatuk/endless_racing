@@ -39,7 +39,12 @@ export const SLAB_TOWER = {
     { height: [18, 34], weight: 3.5 },
     { height: [38, 72], weight: 3.5 },
   ],
-  ROOF_BLOCK: { WIDTH_RATIO: 0.45, DEPTH_RATIO: 0.4, HEIGHT: [2, 6], COLOR: 0x0c0e12 },
+  ROOF_BLOCK: {
+    WIDTH_RATIO: 0.45,
+    DEPTH_RATIO: 0.4,
+    HEIGHT: [2, 6],
+    COLOR: 0x0c0e12,
+  },
   FLOOR_HEIGHT: 4.2,
   MIN_FLOORS: 3,
   FIRST_FLOOR_Y: 3.2,
@@ -94,7 +99,14 @@ export const WAREHOUSE = {
     LEG_LIFT: 0.5,
     LEG_OFFSET: 0.4,
   },
-  NEON_SIGN: { CHANCE: 0.45, THICKNESS: 0.08, HEIGHT: 0.6, LENGTH_RATIO: 0.4, Y_RATIO: 0.82, OFFSET: 0.06 },
+  NEON_SIGN: {
+    CHANCE: 0.45,
+    THICKNESS: 0.08,
+    HEIGHT: 0.6,
+    LENGTH_RATIO: 0.4,
+    Y_RATIO: 0.82,
+    OFFSET: 0.06,
+  },
 } as const;
 
 export const OFFICE_TOWER = {
@@ -112,7 +124,12 @@ export const OFFICE_TOWER = {
   MULLION: { WIDTH: 0.1, DEPTH: 0.12, OFFSET: 0.08 },
   LOBBY_GLASS: { HEIGHT: 2.8, LIFT: 0.2 },
   CROWN: { HEIGHT: 1.2, OVERHANG: 0.15 },
-  ANTENNA: { CHANCE: 0.6, SIZE: [0.12, 6, 0.12], BEACON_SIZE: 0.3, BEACON_COLOR: 0xff3b30 },
+  ANTENNA: {
+    CHANCE: 0.6,
+    SIZE: [0.12, 6, 0.12],
+    BEACON_SIZE: 0.3,
+    BEACON_COLOR: 0xff3b30,
+  },
 } as const;
 
 export const APARTMENT_BLOCK = {
@@ -125,6 +142,14 @@ export const APARTMENT_BLOCK = {
   WINDOW_KINDS: [WINDOW_KIND.PUNCHED, WINDOW_KIND.GRID],
   WINDOW_SKIP_CHANCE: 0.05,
   PARAPET: { OVERHANG: 0.2, HEIGHT: 0.6 },
-  BALCONY: { CHANCE: 0.6, DEPTH: 0.9, THICKNESS: 0.12, WIDTH: 1.6, RAIL_HEIGHT: 0.55, RAIL_THICKNESS: 0.05, Y_DROP: 0.75 },
+  BALCONY: {
+    CHANCE: 0.6,
+    DEPTH: 0.9,
+    THICKNESS: 0.12,
+    WIDTH: 1.6,
+    RAIL_HEIGHT: 0.55,
+    RAIL_THICKNESS: 0.05,
+    Y_DROP: 0.75,
+  },
   ENTRANCE: { SIZE: [0.06, 2.2, 1.6], Y: 1.1, OFFSET: 0.04 },
 } as const;

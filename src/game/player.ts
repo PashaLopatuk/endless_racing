@@ -8,7 +8,12 @@ import { PLAYER, PLAYER_VEHICLE_KIND } from "./constants/player";
 import { CAR_SIZE, CAR_Y, DRIVABLE_X } from "./constants/world";
 import type { DriveGesture } from "./input";
 import type { ImpactKind } from "./types";
-import { frontPivotPose, resolveSpeedTarget, resolveSteerTarget, type CarPose } from "./util/drive";
+import {
+  frontPivotPose,
+  resolveSpeedTarget,
+  resolveSteerTarget,
+  type CarPose,
+} from "./util/drive";
 import { getLaneCenterX } from "./util/lane";
 import { approach, clamp } from "./util/math";
 
@@ -54,7 +59,8 @@ const createInitialState = (): PlayerState => ({
   hitFlash: 0,
 });
 
-const clampToRoad = (x: number): number => clamp(x, DRIVABLE_X.MIN, DRIVABLE_X.MAX);
+const clampToRoad = (x: number): number =>
+  clamp(x, DRIVABLE_X.MIN, DRIVABLE_X.MAX);
 
 const createPlayerBody = (world: RAPIER.World): RAPIER.RigidBody => {
   const body = world.createRigidBody(
@@ -64,32 +70,57 @@ const createPlayerBody = (world: RAPIER.World): RAPIER.RigidBody => {
       .setCcdEnabled(true)
       .setUserData({ kind: BODY_KIND.PLAYER, id: PLAYER.ID }),
   );
+
   world.createCollider(
-    RAPIER.ColliderDesc.cuboid(CAR_SIZE.HALF_WIDTH, CAR_SIZE.HALF_HEIGHT, CAR_SIZE.HALF_LENGTH)
+    RAPIER.ColliderDesc.cuboid(
+      CAR_SIZE.HALF_WIDTH,
+      CAR_SIZE.HALF_HEIGHT,
+      CAR_SIZE.HALF_LENGTH,
+    )
       .setFriction(PLAYER.FRICTION)
       .setRestitution(PLAYER.RESTITUTION)
       .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS),
     body,
   );
+
   return body;
 };
 
-export const createPlayer = (world: RAPIER.World, scene: THREE.Scene): Player => {
+export const createPlayer = (
+  world: RAPIER.World,
+  scene: THREE.Scene,
+): Player => {
   const model = createVehicleModel({
     kind: PLAYER_VEHICLE_KIND,
     paint: PLAYER.COLOR,
     lampBrightness: PLAYER.LAMP_BRIGHTNESS,
     hasSpotlights: true,
   });
+
   scene.add(model.object);
+
   const body = createPlayerBody(world);
   const state = createInitialState();
   const pose: CarPose = { x: START_X, z: 0, yaw: 0 };
+
   let isFlashing = false;
 
   const syncAxles = (dt: number) => {
-    const followed = approach(state.rearX, state.frontX, PLAYER.REAR_FOLLOW, dt);
-    state.rearX = clampToRoad(clamp(followed, state.frontX - PLAYER.MAX_AXLE_LEAD, state.frontX + PLAYER.MAX_AXLE_LEAD));
+    const followed = approach(
+      state.rearX,
+      state.frontX,
+      PLAYER.REAR_FOLLOW,
+      dt,
+    );
+
+    state.rearX = clampToRoad(
+      clamp(
+        followed,
+        state.frontX - PLAYER.MAX_AXLE_LEAD,
+        state.frontX + PLAYER.MAX_AXLE_LEAD,
+      ),
+    );
+
     frontPivotPose(state.frontX, state.rearX, pose);
   };
 
@@ -103,27 +134,41 @@ export const createPlayer = (world: RAPIER.World, scene: THREE.Scene): Player =>
       state.anchorX = state.frontX;
       state.anchorSpeed = state.speed;
     }
+
     state.wasTouching = gesture.isActive;
+
     if (!gesture.isActive) {
       return;
     }
+
     const targetFront = resolveSteerTarget(state.anchorX, gesture.deltaX);
     const targetSpeed = resolveSpeedTarget(state.anchorSpeed, gesture.deltaY);
-    state.frontX = clampToRoad(approach(state.frontX, targetFront, PLAYER.STEER_RESPONSE, dt));
+
+    state.frontX = clampToRoad(
+      approach(state.frontX, targetFront, PLAYER.STEER_RESPONSE, dt),
+    );
+
     state.speed = approach(state.speed, targetSpeed, PLAYER.SPEED_RESPONSE, dt);
   };
 
   const updateFlash = () => {
     const shouldFlash = state.hitFlash > 0;
+
     if (shouldFlash === isFlashing) {
       return;
     }
+
     isFlashing = shouldFlash;
+
     model.setPaint(shouldFlash ? PLAYER.HIT_FLASH_COLOR : PLAYER.COLOR);
   };
 
   syncAxles(0);
-  body.setNextKinematicTranslation({ x: pose.x, y: CAR_Y, z: PLAYER.Z + pose.z });
+  body.setNextKinematicTranslation({
+    x: pose.x,
+    y: CAR_Y,
+    z: PLAYER.Z + pose.z,
+  });
 
   return {
     body,
@@ -141,27 +186,39 @@ export const createPlayer = (world: RAPIER.World, scene: THREE.Scene): Player =>
     },
     update: (gesture, dt, isGameOver) => {
       state.hitFlash = Math.max(0, state.hitFlash - dt);
+
       if (isGameOver) {
         coast(dt);
       } else {
         steer(gesture, dt);
       }
+
       syncAxles(dt);
     },
     commitPose: () => {
-      body.setNextKinematicTranslation({ x: pose.x, y: CAR_Y, z: PLAYER.Z + pose.z });
+      body.setNextKinematicTranslation({
+        x: pose.x,
+        y: CAR_Y,
+        z: PLAYER.Z + pose.z,
+      });
     },
     syncMesh: () => {
       const translation = body.translation();
+
       model.object.position.set(translation.x, translation.y, translation.z);
       model.object.rotation.y = pose.yaw;
+
       updateFlash();
     },
     absorbImpact: (kind) => {
       const speedLoss = IMPACT_SPEED_LOSS[kind];
+
       state.health = Math.max(0, state.health - IMPACT_DAMAGE[kind]);
       state.speed = Math.max(PLAYER.MIN_SPEED, state.speed - speedLoss);
-      state.anchorSpeed = Math.max(PLAYER.MIN_SPEED, state.anchorSpeed - speedLoss);
+      state.anchorSpeed = Math.max(
+        PLAYER.MIN_SPEED,
+        state.anchorSpeed - speedLoss,
+      );
       state.hitFlash = PLAYER.HIT_FLASH_SECONDS;
     },
     nudge: (offsetX) => {
@@ -175,8 +232,11 @@ export const createPlayer = (world: RAPIER.World, scene: THREE.Scene): Player =>
     },
     reset: () => {
       Object.assign(state, createInitialState());
+
       syncAxles(0);
+
       body.setTranslation({ x: pose.x, y: CAR_Y, z: PLAYER.Z + pose.z }, true);
+
       updateFlash();
     },
     dispose: () => {
