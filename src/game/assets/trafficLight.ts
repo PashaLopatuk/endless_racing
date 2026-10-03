@@ -1,27 +1,28 @@
-import * as THREE from "three";
+import { BATCH_LAYER } from "../constants/assets";
+import { TRAFFIC_LIGHT } from "../constants/street";
+import { mixHex } from "../util/color";
+import { createMeshBatch, toStreetModel, type StreetModel } from "./meshBatch";
 
-import { addBox, lambert, type StreetModel } from "./mesh";
+/** `armSign` points the signal arm over the road (-1 or 1). The lit lamp is chosen from the seed. */
+export const createTrafficLightModel = (seed: number, armSign: number): StreetModel => {
+  const { POLE, ARM, HEAD, LAMP, LAMP_COLORS } = TRAFFIC_LIGHT;
+  const direction = Math.sign(armSign) || 1;
+  const litIndex = Math.abs(seed) % LAMP_COLORS.length;
+  const headX = direction * HEAD.X;
+  const batch = createMeshBatch();
 
-const POLE = lambert(0x2c3036);
-const HOUSING = lambert(0x17191d);
-POLE.userData.keepAlive = true;
-HOUSING.userData.keepAlive = true;
-const LAMPS = [0xff3b30, 0xffb020, 0x3ddc6a].map((color) => {
-  const material = new THREE.MeshBasicMaterial({ color });
-  material.userData.keepAlive = true;
-  return material;
-});
+  batch.addBox({ size: POLE.SIZE, position: [0, POLE.Y, 0], color: POLE.COLOR });
+  batch.addBox({ size: ARM.SIZE, position: [direction * ARM.X, ARM.Y, 0], color: POLE.COLOR });
+  batch.addBox({ size: HEAD.SIZE, position: [headX, HEAD.Y, 0], color: HEAD.COLOR });
 
-export const getTrafficLightModel = (seed: number, armSign: number): StreetModel => {
-  const group = new THREE.Group();
-  const direction = armSign < 0 ? -1 : 1;
-  const litIndex = Math.abs(seed) % LAMPS.length;
-  const headX = direction * 1.15;
+  LAMP_COLORS.forEach((color, index) => {
+    batch.addBox({
+      size: LAMP.SIZE,
+      position: [headX, LAMP.TOP_Y - index * LAMP.STEP, LAMP.Z],
+      color: index === litIndex ? color : mixHex(HEAD.COLOR, color, TRAFFIC_LIGHT.UNLIT_GLOW),
+      layer: BATCH_LAYER.GLOW,
+    });
+  });
 
-  addBox(group, 0.14, 4.4, 0.14, 0, 2.2, 0, POLE);
-  addBox(group, 1.15, 0.1, 0.1, direction * 0.58, 4.35, 0, POLE);
-  addBox(group, 0.26, 0.62, 0.2, headX, 4.2, 0, HOUSING);
-  addBox(group, 0.14, 0.14, 0.05, headX, 4.38 - litIndex * 0.18, -0.12, LAMPS[litIndex] ?? LAMPS[0]);
-
-  return { object: group, width: 0.4, depth: 0.4 };
+  return toStreetModel(batch, TRAFFIC_LIGHT.FOOTPRINT, TRAFFIC_LIGHT.FOOTPRINT);
 };

@@ -1,100 +1,286 @@
 import * as THREE from "three";
 
-import { createRng } from "../util/math";
-import { addBakedBox, addBox, bakeStreetFace, BAKED_FACADE, lambert, type StreetModel } from "./mesh";
-import { addWindow, createWindowKit, WINDOW_KIND } from "./windows";
+import { BATCH_LAYER } from "../constants/assets";
+import { BROWNSTONE, BUNGALOW, GABLE_HOUSE, HOUSE_STYLE, HOUSE_STYLE_WEIGHTS, MODERN_HOUSE, SHOP_HOUSE, TOWNHOUSE, type HouseStyle } from "../constants/houses";
+import { AWNING_PALETTE, DOOR_PALETTE, HOUSE_PALETTE, NEON_PALETTE, ROOF_PALETTE, TRIM_PALETTE } from "../constants/palette";
+import { GLOW_PROFILE, WINDOW_KIND, type WindowKind } from "../constants/windows";
+import { MIRRORED_SIDES, QUARTER_PI } from "../constants/world";
+import type { Rng } from "../types";
+import { clamp } from "../util/math";
+import { chance, createRng, pick, pickWeighted, randomIn } from "../util/random";
+import { addCornice, addDoor, addWall, pickWallColor } from "./facade";
+import { createMeshBatch, toStreetModel, type MeshBatch, type StreetModel } from "./meshBatch";
+import { addWindow } from "./windows";
 
-const HOUSE_PALETTE = [0x4a342c, 0x3e2e28, 0x52382e, 0x2f3834, 0x3a322c];
+/** Colours rolled once per house and shared by every part builder. */
+interface HouseContext {
+  batch: MeshBatch;
+  random: Rng;
+  wall: number;
+  trim: number;
+  roof: number;
+  door: number;
+}
 
-type Rng = () => number;
+interface HouseWindowSpec {
+  faceX: number;
+  y: number;
+  z: number;
+}
 
-const pick = (random: Rng, palette: readonly number[]): number => {
-  return palette[Math.floor(random() * palette.length)] ?? palette[0];
+interface GableRoofSpec {
+  width: number;
+  wallHeight: number;
+  roofHeight: number;
+  depth: number;
+}
+
+type HouseBuilder = (context: HouseContext) => StreetModel;
+
+const createHouseContext = (random: Rng): HouseContext => ({
+  batch: createMeshBatch(),
+  random,
+  wall: pickWallColor(random, HOUSE_PALETTE),
+  trim: pick(random, TRIM_PALETTE),
+  roof: pick(random, ROOF_PALETTE),
+  door: pick(random, DOOR_PALETTE),
+});
+
+const addHouseWindow = (context: HouseContext, kind: WindowKind, { faceX, y, z }: HouseWindowSpec) => {
+  addWindow(context.batch, { kind, faceX, y, z, trim: context.trim, glow: GLOW_PROFILE.RESIDENTIAL, random: context.random });
 };
 
-const addDoor = (group: THREE.Group, faceX: number, z: number, trim: THREE.Material, door: THREE.Material) => {
-  addBox(group, 0.18, 2.1, 1.05, faceX - 0.02, 1.15, z, trim);
-  addBox(group, 0.08, 1.85, 0.78, faceX + 0.06, 1.05, z, door);
-  addBox(group, 0.06, 0.08, 0.08, faceX + 0.12, 1.05, z + 0.24, trim);
-  for (let step = 0; step < 3; step += 1) {
-    addBox(group, 0.28, 0.14, 1.15 - step * 0.08, faceX + 0.2 + step * 0.22, 0.14 + step * 0.14, z, trim);
-  }
-};
-
-const createBrownstone = (random: Rng): StreetModel => {
-  const width = 6.2;
-  const depth = 8 + random() * 1.5;
-  const height = 9.5 + random() * 2;
-  const group = new THREE.Group();
-  const wall = pick(random, HOUSE_PALETTE);
-  const kit = createWindowKit(0x6a5344);
-  addBakedBox(group, width, height, depth, 0, height / 2, 0, wall);
-  addBox(group, width + 0.35, 0.28, depth + 0.2, 0, height, 0, kit.trim);
-  addDoor(group, width / 2, -depth * 0.22, kit.trim, lambert(0x1a120e));
-
-  for (let floor = 0; floor < 3; floor += 1) {
-    const y = 2.4 + floor * 2.35;
-    addWindow(group, WINDOW_KIND.PUNCHED, width / 2, y, depth * 0.16, kit, random() > 0.35, true);
-    addWindow(group, WINDOW_KIND.PUNCHED, width / 2, y, depth * 0.16 + 1.35, kit, random() > 0.5, floor === 0);
-  }
-  return { object: group, width, depth };
-};
-
-const createGableHouse = (random: Rng): StreetModel => {
-  const width = 7.4;
-  const depth = 7 + random() * 1.2;
-  const wallHeight = 4.6;
-  const roofHeight = 2.4;
-  const group = new THREE.Group();
-  const wall = pick(random, HOUSE_PALETTE);
-  const kit = createWindowKit(0x5c4a3c);
+const createGablePrism = (width: number, height: number, depth: number): THREE.BufferGeometry => {
   const shape = new THREE.Shape();
+  shape.moveTo(-width / 2, 0);
+  shape.lineTo(width / 2, 0);
+  shape.lineTo(0, height);
+  shape.closePath();
+  const geometry = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false });
+  geometry.translate(0, 0, -depth / 2);
+  return geometry;
+};
+
+const createHipRoof = (width: number, height: number, depth: number): THREE.BufferGeometry => {
+  const geometry = new THREE.ConeGeometry(BUNGALOW.HIP_ROOF_RADIUS, 1, BUNGALOW.HIP_ROOF_SIDES);
+  geometry.rotateY(QUARTER_PI);
+  geometry.scale(width, height, depth);
+  return geometry;
+};
+
+const buildBrownstone: HouseBuilder = (context) => {
+  const { batch, random } = context;
+  const width = randomIn(random, BROWNSTONE.WIDTH);
+  const depth = randomIn(random, BROWNSTONE.DEPTH);
+  const height = randomIn(random, BROWNSTONE.HEIGHT);
+  const faceX = width / 2;
+
+  addWall(batch, { width, height, depth, color: context.wall });
+  addCornice(batch, { width, depth, y: height, overhang: BROWNSTONE.CORNICE.OVERHANG, height: BROWNSTONE.CORNICE.HEIGHT, color: context.trim });
+  addDoor(batch, { faceX, z: depth * BROWNSTONE.DOOR_Z_RATIO, trim: context.trim, door: context.door, hasSteps: true });
+
+  const firstZ = depth * BROWNSTONE.WINDOW_Z_RATIO;
+  for (let floor = 0; floor < BROWNSTONE.FLOORS; floor += 1) {
+    const y = BROWNSTONE.FIRST_FLOOR_Y + floor * BROWNSTONE.FLOOR_STEP;
+    addHouseWindow(context, WINDOW_KIND.PUNCHED, { faceX, y, z: firstZ });
+    addHouseWindow(context, WINDOW_KIND.PUNCHED, { faceX, y, z: firstZ + BROWNSTONE.WINDOW_PAIR_GAP });
+  }
+  return toStreetModel(batch, width, depth);
+};
+
+const addGableRoof = (context: HouseContext, { width, wallHeight, roofHeight, depth }: GableRoofSpec) => {
   const half = width / 2;
-  shape.moveTo(-half, 0);
-  shape.lineTo(half, 0);
-  shape.lineTo(half, wallHeight);
-  shape.lineTo(0, wallHeight + roofHeight);
-  shape.lineTo(-half, wallHeight);
-  const shellGeometry = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false });
-  shellGeometry.translate(0, 0, -depth / 2);
-  bakeStreetFace(shellGeometry, wall);
-  const shell = new THREE.Mesh(shellGeometry, BAKED_FACADE);
-  group.add(shell);
-
-  addWindow(group, WINDOW_KIND.BAY, half, 1.7, 0.2, kit, random() > 0.3, true);
-  addWindow(group, WINDOW_KIND.PUNCHED, half, 3.5, -depth * 0.22, kit, random() > 0.4, false);
-  addDoor(group, half, depth * 0.22, kit.trim, lambert(0x241810));
-  addBox(group, 0.45, 1.6, 0.45, -width * 0.18, wallHeight + roofHeight * 0.45, -depth * 0.15, lambert(0x3a3030));
-  return { object: group, width, depth };
-};
-
-const createTownhouse = (random: Rng): StreetModel => {
-  const width = 5.4;
-  const depth = 9 + random();
-  const height = 11 + random() * 1.5;
-  const group = new THREE.Group();
-  const wall = pick(random, HOUSE_PALETTE);
-  const kit = createWindowKit(0x4e4338);
-  addBakedBox(group, width, height, depth, 0, height / 2, 0, wall);
-  addBox(group, width * 0.72, 1.4, depth * 0.72, 0, height + 0.6, 0, lambert(0x241c18));
-  addDoor(group, width / 2, 0, kit.trim, lambert(0x140e0c));
-
-  for (let floor = 0; floor < 3; floor += 1) {
-    addWindow(group, WINDOW_KIND.SLIT, width / 2, 2.6 + floor * 2.5, -depth * 0.22, kit, random() > 0.45, floor !== 1);
-    addWindow(group, WINDOW_KIND.SLIT, width / 2, 2.6 + floor * 2.5, depth * 0.22, kit, random() > 0.45, true);
+  const slope = Math.atan2(roofHeight, half);
+  const slopeLength = Math.hypot(half, roofHeight) + GABLE_HOUSE.ROOF_OVERHANG;
+  context.batch.addGeometry({ geometry: createGablePrism(width, roofHeight, depth), position: [0, wallHeight, 0], color: context.wall, isShaded: true });
+  for (const side of MIRRORED_SIDES) {
+    context.batch.addBox({
+      size: [slopeLength, GABLE_HOUSE.ROOF_THICKNESS, depth + GABLE_HOUSE.ROOF_OVERHANG * 2],
+      rotation: [0, 0, -side * slope],
+      position: [(side * half) / 2, wallHeight + roofHeight / 2 + GABLE_HOUSE.ROOF_THICKNESS / 2, 0],
+      color: context.roof,
+    });
   }
-  return { object: group, width, depth };
 };
 
-export const getHouseModel = (seed: number): StreetModel => {
+const buildGableHouse: HouseBuilder = (context) => {
+  const { batch, random } = context;
+  const width = randomIn(random, GABLE_HOUSE.WIDTH);
+  const depth = randomIn(random, GABLE_HOUSE.DEPTH);
+  const wallHeight = randomIn(random, GABLE_HOUSE.WALL_HEIGHT);
+  const roofHeight = randomIn(random, GABLE_HOUSE.ROOF_HEIGHT);
+  const faceX = width / 2;
+
+  addWall(batch, { width, height: wallHeight, depth, color: context.wall });
+  addGableRoof(context, { width, wallHeight, roofHeight, depth });
+  addHouseWindow(context, WINDOW_KIND.BAY, { faceX, y: GABLE_HOUSE.BAY_Y, z: GABLE_HOUSE.BAY_Z });
+  addHouseWindow(context, WINDOW_KIND.PUNCHED, { faceX, y: GABLE_HOUSE.UPPER_WINDOW_Y, z: depth * GABLE_HOUSE.UPPER_WINDOW_Z_RATIO });
+  addDoor(batch, { faceX, z: depth * GABLE_HOUSE.DOOR_Z_RATIO, trim: context.trim, door: context.door, hasSteps: false });
+
+  const chimney = GABLE_HOUSE.CHIMNEY;
+  batch.addBox({
+    size: chimney.SIZE,
+    position: [width * chimney.X_RATIO, wallHeight + roofHeight * chimney.ROOF_RATIO, depth * chimney.Z_RATIO],
+    color: context.trim,
+  });
+  return toStreetModel(batch, width, depth);
+};
+
+const buildTownhouse: HouseBuilder = (context) => {
+  const { batch, random } = context;
+  const width = randomIn(random, TOWNHOUSE.WIDTH);
+  const depth = randomIn(random, TOWNHOUSE.DEPTH);
+  const height = randomIn(random, TOWNHOUSE.HEIGHT);
+  const faceX = width / 2;
+  const windowKind = chance(random, TOWNHOUSE.BAY_CHANCE) ? WINDOW_KIND.BAY : WINDOW_KIND.SLIT;
+  const parapet = TOWNHOUSE.PARAPET;
+
+  addWall(batch, { width, height, depth, color: context.wall });
+  batch.addBox({
+    size: [width * parapet.WIDTH_RATIO, parapet.HEIGHT, depth * parapet.DEPTH_RATIO],
+    position: [0, height + parapet.HEIGHT / 2, 0],
+    color: context.roof,
+  });
+  addDoor(batch, { faceX, z: 0, trim: context.trim, door: context.door, hasSteps: true });
+
+  const windowZ = depth * TOWNHOUSE.WINDOW_Z_RATIO;
+  for (let floor = 0; floor < TOWNHOUSE.FLOORS; floor += 1) {
+    const y = TOWNHOUSE.FIRST_FLOOR_Y + floor * TOWNHOUSE.FLOOR_STEP;
+    for (const side of MIRRORED_SIDES) {
+      addHouseWindow(context, windowKind, { faceX, y, z: side * windowZ });
+    }
+  }
+  return toStreetModel(batch, width, depth);
+};
+
+const addPorch = (context: HouseContext, faceX: number, depth: number) => {
+  const porch = BUNGALOW.PORCH;
+  const length = depth * porch.LENGTH_RATIO;
+  const columnHeight = porch.ROOF_Y - porch.DECK_HEIGHT;
+  context.batch.addBox({ size: [porch.DEPTH, porch.DECK_HEIGHT, length], position: [faceX + porch.DEPTH / 2, porch.DECK_HEIGHT / 2, 0], color: context.trim });
+  for (let column = 0; column < porch.COLUMN_COUNT; column += 1) {
+    const z = -length / 2 + porch.COLUMN_SIZE / 2 + (column * (length - porch.COLUMN_SIZE)) / (porch.COLUMN_COUNT - 1);
+    context.batch.addBox({
+      size: [porch.COLUMN_SIZE, columnHeight, porch.COLUMN_SIZE],
+      position: [faceX + porch.DEPTH - porch.COLUMN_SIZE / 2, porch.DECK_HEIGHT + columnHeight / 2, z],
+      color: context.trim,
+    });
+  }
+  context.batch.addBox({
+    size: [porch.DEPTH + porch.ROOF_OVERHANG, porch.ROOF_THICKNESS, length + porch.ROOF_OVERHANG * 2],
+    position: [faceX + (porch.DEPTH + porch.ROOF_OVERHANG) / 2, porch.ROOF_Y, 0],
+    color: context.roof,
+  });
+};
+
+const buildBungalow: HouseBuilder = (context) => {
+  const { batch, random } = context;
+  const bodyWidth = randomIn(random, BUNGALOW.BODY_WIDTH);
+  const depth = randomIn(random, BUNGALOW.DEPTH);
+  const wallHeight = randomIn(random, BUNGALOW.WALL_HEIGHT);
+  const roofHeight = randomIn(random, BUNGALOW.ROOF_HEIGHT);
+  const width = bodyWidth + BUNGALOW.PORCH.DEPTH;
+  const bodyX = -BUNGALOW.PORCH.DEPTH / 2;
+  const faceX = bodyX + bodyWidth / 2;
+  const overhang = BUNGALOW.ROOF_OVERHANG * 2;
+
+  addWall(batch, { width: bodyWidth, height: wallHeight, depth, color: context.wall, x: bodyX });
+  batch.addGeometry({
+    geometry: createHipRoof(bodyWidth + overhang, roofHeight, depth + overhang),
+    position: [bodyX, wallHeight + roofHeight / 2, 0],
+    color: context.roof,
+  });
+  addPorch(context, faceX, depth);
+  addDoor(batch, { faceX, z: 0, trim: context.trim, door: context.door, hasSteps: false });
+  for (const side of MIRRORED_SIDES) {
+    addHouseWindow(context, WINDOW_KIND.GRID, { faceX, y: BUNGALOW.WINDOW_Y, z: side * depth * BUNGALOW.WINDOW_Z_RATIO });
+  }
+  return toStreetModel(batch, width, depth);
+};
+
+const buildModernHouse: HouseBuilder = (context) => {
+  const { batch, random } = context;
+  const width = randomIn(random, MODERN_HOUSE.WIDTH);
+  const depth = randomIn(random, MODERN_HOUSE.DEPTH);
+  const baseHeight = randomIn(random, MODERN_HOUSE.BASE_HEIGHT);
+  const upperWidth = width * randomIn(random, MODERN_HOUSE.UPPER_WIDTH_RATIO);
+  const upperDepth = depth * randomIn(random, MODERN_HOUSE.UPPER_DEPTH_RATIO);
+  const upperHeight = randomIn(random, MODERN_HOUSE.UPPER_HEIGHT);
+  const maxShift = (depth - upperDepth) / 2;
+  const upperZ = clamp(depth * randomIn(random, MODERN_HOUSE.UPPER_SHIFT_Z_RATIO), -maxShift, maxShift);
+  const upperX = (width - upperWidth) / 2;
+  const faceX = width / 2;
+  const edge = MODERN_HOUSE.ROOF_EDGE;
+  const panel = MODERN_HOUSE.PANEL;
+
+  addWall(batch, { width, height: baseHeight, depth, color: context.wall });
+  addCornice(batch, { width, depth, y: baseHeight, overhang: edge.OVERHANG, height: edge.HEIGHT, color: context.roof });
+  addWall(batch, { width: upperWidth, height: upperHeight, depth: upperDepth, color: pickWallColor(random, HOUSE_PALETTE), x: upperX, z: upperZ, baseY: baseHeight });
+  addCornice(batch, { width: upperWidth, depth: upperDepth, y: baseHeight + upperHeight, overhang: edge.OVERHANG, height: edge.HEIGHT, color: context.roof, x: upperX, z: upperZ });
+
+  const panelDepth = upperDepth * panel.DEPTH_RATIO;
+  batch.addBox({
+    size: [panel.THICKNESS, upperHeight, panelDepth],
+    position: [faceX + panel.THICKNESS / 2, baseHeight + upperHeight / 2, upperZ + upperDepth / 2 - panelDepth / 2],
+    color: context.trim,
+  });
+  addHouseWindow(context, WINDOW_KIND.STRIP, { faceX, y: baseHeight * MODERN_HOUSE.WINDOW_Y_RATIO, z: depth * MODERN_HOUSE.BASE_WINDOW_Z_RATIO });
+  addHouseWindow(context, WINDOW_KIND.STRIP, { faceX, y: baseHeight + upperHeight * MODERN_HOUSE.WINDOW_Y_RATIO, z: upperZ - panelDepth / 2 });
+  addDoor(batch, { faceX, z: depth * MODERN_HOUSE.DOOR_Z_RATIO, trim: context.trim, door: context.door, hasSteps: false });
+  return toStreetModel(batch, width, depth);
+};
+
+const buildShopHouse: HouseBuilder = (context) => {
+  const { batch, random } = context;
+  const width = randomIn(random, SHOP_HOUSE.WIDTH);
+  const depth = randomIn(random, SHOP_HOUSE.DEPTH);
+  const height = randomIn(random, SHOP_HOUSE.HEIGHT);
+  const faceX = width / 2;
+  const { AWNING, SIGN, STOREFRONT, CORNICE } = SHOP_HOUSE;
+
+  addWall(batch, { width, height, depth, color: context.wall });
+  addCornice(batch, { width, depth, y: height, overhang: CORNICE.OVERHANG, height: CORNICE.HEIGHT, color: context.trim });
+  addWindow(batch, {
+    kind: WINDOW_KIND.SHOP,
+    faceX,
+    y: STOREFRONT.Y,
+    z: depth * STOREFRONT.Z_RATIO,
+    trim: context.trim,
+    glow: GLOW_PROFILE.STOREFRONT,
+    random,
+  });
+  addDoor(batch, { faceX, z: depth * SHOP_HOUSE.DOOR_Z_RATIO, trim: context.trim, door: context.door, hasSteps: false });
+
+  batch.addBox({
+    size: [AWNING.DEPTH, AWNING.THICKNESS, depth * AWNING.LENGTH_RATIO],
+    rotation: [0, 0, -AWNING.TILT],
+    position: [faceX + (AWNING.DEPTH / 2) * Math.cos(AWNING.TILT), AWNING.Y - (AWNING.DEPTH / 2) * Math.sin(AWNING.TILT), 0],
+    color: pick(random, AWNING_PALETTE),
+  });
+  batch.addBox({
+    size: [SIGN.DEPTH, SIGN.HEIGHT, depth * SIGN.LENGTH_RATIO],
+    position: [faceX + SIGN.DEPTH / 2, SIGN.Y, 0],
+    color: pick(random, NEON_PALETTE),
+    layer: BATCH_LAYER.GLOW,
+  });
+  for (const side of MIRRORED_SIDES) {
+    addHouseWindow(context, WINDOW_KIND.PUNCHED, { faceX, y: SHOP_HOUSE.UPPER_WINDOW_Y, z: side * depth * SHOP_HOUSE.UPPER_WINDOW_SPREAD_RATIO });
+  }
+  return toStreetModel(batch, width, depth);
+};
+
+const BUILDERS: Readonly<Record<HouseStyle, HouseBuilder>> = {
+  [HOUSE_STYLE.BROWNSTONE]: buildBrownstone,
+  [HOUSE_STYLE.GABLE]: buildGableHouse,
+  [HOUSE_STYLE.TOWNHOUSE]: buildTownhouse,
+  [HOUSE_STYLE.BUNGALOW]: buildBungalow,
+  [HOUSE_STYLE.MODERN]: buildModernHouse,
+  [HOUSE_STYLE.SHOP]: buildShopHouse,
+};
+
+/** Deterministic: the same seed always yields the same house. */
+export const createHouseModel = (seed: number): StreetModel => {
   const random = createRng(seed);
-  const kind = Math.floor(random() * 3);
-  switch (kind) {
-    case 0:
-      return createGableHouse(random);
-    case 1:
-      return createTownhouse(random);
-    default:
-      return createBrownstone(random);
-  }
+  const { style } = pickWeighted(random, HOUSE_STYLE_WEIGHTS);
+  return BUILDERS[style](createHouseContext(random));
 };

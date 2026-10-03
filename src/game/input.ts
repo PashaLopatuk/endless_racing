@@ -1,50 +1,49 @@
-import { INPUT_ZONE_START } from "./const";
+import { INPUT } from "./constants/input";
 
-export type DriveGesture = {
+export interface DriveGesture {
+  readonly isActive: boolean;
+  /** Pixels dragged right since the touch started. */
+  readonly deltaX: number;
+  /** Pixels dragged up since the touch started. */
+  readonly deltaY: number;
+}
+
+export interface TouchInput {
+  /** Returns the same object every call; read it immediately rather than storing it. */
+  read(): DriveGesture;
+  dispose(): void;
+}
+
+interface MutableGesture {
   isActive: boolean;
   deltaX: number;
   deltaY: number;
-};
-
-export type TouchInput = {
-  read: () => DriveGesture;
-  dispose: () => void;
-};
+}
 
 const isInDriveZone = (clientY: number): boolean => {
-  return clientY >= window.innerHeight * INPUT_ZONE_START;
+  return clientY >= window.innerHeight * INPUT.DRIVE_ZONE_START;
+};
+
+const isUiTarget = (target: EventTarget | null): boolean => {
+  return target instanceof Element && target.closest(INPUT.IGNORED_TARGETS) !== null;
 };
 
 export const createTouchInput = (): TouchInput => {
+  const gesture: MutableGesture = { isActive: false, deltaX: 0, deltaY: 0 };
   let activePointerId: number | null = null;
   let originX = 0;
   let originY = 0;
-  let currentX = 0;
-  let currentY = 0;
-  let isActive = false;
-
-  const endGesture = (pointerId: number) => {
-    if (pointerId !== activePointerId) {
-      return;
-    }
-    activePointerId = null;
-    isActive = false;
-  };
 
   const onPointerDown = (event: PointerEvent) => {
-    const target = event.target;
-    if (target instanceof Element && target.closest("button, a")) {
-      return;
-    }
-    if (activePointerId !== null || !isInDriveZone(event.clientY)) {
+    if (isUiTarget(event.target) || activePointerId !== null || !isInDriveZone(event.clientY)) {
       return;
     }
     activePointerId = event.pointerId;
     originX = event.clientX;
     originY = event.clientY;
-    currentX = event.clientX;
-    currentY = event.clientY;
-    isActive = true;
+    gesture.isActive = true;
+    gesture.deltaX = 0;
+    gesture.deltaY = 0;
     event.preventDefault();
   };
 
@@ -52,12 +51,18 @@ export const createTouchInput = (): TouchInput => {
     if (event.pointerId !== activePointerId) {
       return;
     }
-    currentX = event.clientX;
-    currentY = event.clientY;
+    gesture.deltaX = event.clientX - originX;
+    gesture.deltaY = originY - event.clientY;
   };
 
   const onPointerUp = (event: PointerEvent) => {
-    endGesture(event.pointerId);
+    if (event.pointerId !== activePointerId) {
+      return;
+    }
+    activePointerId = null;
+    gesture.isActive = false;
+    gesture.deltaX = 0;
+    gesture.deltaY = 0;
   };
 
   window.addEventListener("pointerdown", onPointerDown, { passive: false });
@@ -66,16 +71,7 @@ export const createTouchInput = (): TouchInput => {
   window.addEventListener("pointercancel", onPointerUp);
 
   return {
-    read: () => {
-      if (!isActive) {
-        return { isActive: false, deltaX: 0, deltaY: 0 };
-      }
-      return {
-        isActive: true,
-        deltaX: currentX - originX,
-        deltaY: originY - currentY,
-      };
-    },
+    read: () => gesture,
     dispose: () => {
       window.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("pointermove", onPointerMove);

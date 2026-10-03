@@ -1,95 +1,114 @@
 import * as THREE from "three";
 
-import { disposeObject, getBuildingModel, getHouseModel, getRoadSegmentModel, getTrafficLightModel } from "../assets/models";
-import type { StreetModel } from "../assets/mesh";
-import {
-  BUILDING_COUNT_PER_SIDE,
-  BUILDING_SPACING,
-  ENVIRONMENT_DESPAWN_Z,
-  HOUSE_COUNT_PER_SIDE,
-  HOUSE_ROW_DEPTH,
-  HOUSE_SPACING,
-  ROAD_SEGMENT_COUNT,
-  ROAD_SEGMENT_LENGTH,
-  ROAD_WIDTH,
-  SIDEWALK_WIDTH,
-  TRAFFIC_LIGHT_COUNT_PER_SIDE,
-  TRAFFIC_LIGHT_SPACING,
-} from "../const";
+import { createBuildingModel } from "../assets/buildings";
+import { createHouseModel } from "../assets/houses";
+import type { BatchedModel, StreetModel } from "../assets/meshBatch";
+import { createRoadSegment } from "../assets/road";
+import { createTrafficLightModel } from "../assets/trafficLight";
+import { STREET, STREET_ROW } from "../constants/street";
+import { ROAD_HALF_WIDTH, STREET_SIDE, STREET_SIDES } from "../constants/world";
 
-const BUILDING_GAP = 1.2;
-const HOUSE_CURB_GAP = 0.45;
+export interface Environment {
+  scroll(distance: number): void;
+  dispose(): void;
+}
 
-type PooledPiece = {
-  mesh: THREE.Object3D;
+interface ScrollingPiece {
+  object: THREE.Object3D;
+  /** Length of the loop this piece belongs to; it jumps forward by this much after leaving the view. */
   span: number;
-};
+}
 
-export type Environment = {
-  scroll: (distance: number) => void;
-  dispose: () => void;
-};
+interface Placement {
+  x: number;
+  z: number;
+  rotationY: number;
+  span: number;
+}
+
+interface PlacedModel {
+  model: StreetModel;
+  placement: Placement;
+}
+
+const CURB_X = ROAD_HALF_WIDTH + STREET.SIDEWALK_WIDTH;
+
+const facingRoad = (side: number): number => (side === STREET_SIDE.RIGHT ? Math.PI : 0);
 
 export const createEnvironment = (scene: THREE.Scene): Environment => {
-  const pieces: PooledPiece[] = [];
-  const owned: THREE.Object3D[] = [];
+  const pieces: ScrollingPiece[] = [];
+  const owned: BatchedModel[] = [];
 
-  const addPiece = (model: StreetModel, x: number, z: number, rotationY: number, span: number) => {
-    model.object.position.set(x, 0, z);
-    model.object.rotation.y = rotationY;
-    scene.add(model.object);
-    owned.push(model.object);
-    pieces.push({ mesh: model.object, span });
+  const place = (object: THREE.Object3D, { x, z, rotationY, span }: Placement) => {
+    object.position.set(x, 0, z);
+    object.rotation.y = rotationY;
+    scene.add(object);
+    pieces.push({ object, span });
   };
 
-  const roadSpan = ROAD_SEGMENT_COUNT * ROAD_SEGMENT_LENGTH;
-  for (let index = 0; index < ROAD_SEGMENT_COUNT; index += 1) {
-    const mesh = getRoadSegmentModel();
-    mesh.position.z = (index - 1) * ROAD_SEGMENT_LENGTH;
-    scene.add(mesh);
-    owned.push(mesh);
-    pieces.push({ mesh, span: roadSpan });
-  }
+  const placeModel = (model: BatchedModel, placement: Placement) => {
+    owned.push(model);
+    place(model.object, placement);
+  };
 
-  const curb = ROAD_WIDTH / 2 + SIDEWALK_WIDTH;
-  const buildingSpan = BUILDING_COUNT_PER_SIDE * BUILDING_SPACING;
-  const houseSpan = HOUSE_COUNT_PER_SIDE * HOUSE_SPACING;
-  const lightSpan = TRAFFIC_LIGHT_COUNT_PER_SIDE * TRAFFIC_LIGHT_SPACING;
+  const layRoad = () => {
+    const template = createRoadSegment();
+    owned.push(template);
+    const span = STREET.ROAD_SEGMENT_COUNT * STREET.ROAD_SEGMENT_LENGTH;
+    for (let index = 0; index < STREET.ROAD_SEGMENT_COUNT; index += 1) {
+      const object = index === 0 ? template.object : template.object.clone();
+      place(object, { x: 0, z: (index - STREET.ROAD_SEGMENTS_BEHIND) * STREET.ROAD_SEGMENT_LENGTH, rotationY: 0, span });
+    }
+  };
 
-  for (const side of [-1, 1]) {
-    const faceRoad = side > 0 ? Math.PI : 0;
-    for (let index = 0; index < BUILDING_COUNT_PER_SIDE; index += 1) {
-      const building = getBuildingModel(side > 0 ? index + 100 : index + 1);
-      const x = side * (curb + HOUSE_ROW_DEPTH + building.width / 2 + BUILDING_GAP);
-      addPiece(building, x, index * BUILDING_SPACING - 48, faceRoad, buildingSpan);
+  const lineRow = (count: number, createAt: (index: number) => PlacedModel) => {
+    for (let index = 0; index < count; index += 1) {
+      const { model, placement } = createAt(index);
+      placeModel(model, placement);
     }
-    for (let index = 0; index < HOUSE_COUNT_PER_SIDE; index += 1) {
-      const house = getHouseModel(side > 0 ? index + 500 : index + 400);
-      const x = side * (curb + house.width / 2 + HOUSE_CURB_GAP);
-      addPiece(house, x, index * HOUSE_SPACING - 24, faceRoad, houseSpan);
-    }
-    for (let index = 0; index < TRAFFIC_LIGHT_COUNT_PER_SIDE; index += 1) {
-      const armSign = -side;
-      const light = getTrafficLightModel(index + (side > 0 ? 20 : 0), armSign);
-      const x = side * (ROAD_WIDTH / 2 + 1.15);
-      addPiece(light, x, index * TRAFFIC_LIGHT_SPACING - 16, 0, lightSpan);
-    }
-  }
+  };
+
+  const lineStreetSide = (side: number) => {
+    const isRight = side === STREET_SIDE.RIGHT;
+    const rotationY = facingRoad(side);
+    const { BUILDINGS, HOUSES, TRAFFIC_LIGHTS } = STREET_ROW;
+
+    lineRow(BUILDINGS.COUNT_PER_SIDE, (index) => {
+      const model = createBuildingModel(index + (isRight ? BUILDINGS.SEED_RIGHT : BUILDINGS.SEED_LEFT));
+      const x = side * (CURB_X + HOUSES.ROW_DEPTH + model.width / 2 + BUILDINGS.GAP);
+      return { model, placement: { x, z: BUILDINGS.START_Z + index * BUILDINGS.SPACING, rotationY, span: BUILDINGS.COUNT_PER_SIDE * BUILDINGS.SPACING } };
+    });
+
+    lineRow(HOUSES.COUNT_PER_SIDE, (index) => {
+      const model = createHouseModel(index + (isRight ? HOUSES.SEED_RIGHT : HOUSES.SEED_LEFT));
+      const x = side * (CURB_X + model.width / 2 + HOUSES.CURB_GAP);
+      return { model, placement: { x, z: HOUSES.START_Z + index * HOUSES.SPACING, rotationY, span: HOUSES.COUNT_PER_SIDE * HOUSES.SPACING } };
+    });
+
+    lineRow(TRAFFIC_LIGHTS.COUNT_PER_SIDE, (index) => {
+      const model = createTrafficLightModel(index + (isRight ? TRAFFIC_LIGHTS.SEED_RIGHT : TRAFFIC_LIGHTS.SEED_LEFT), -side);
+      const x = side * (ROAD_HALF_WIDTH + TRAFFIC_LIGHTS.CURB_OFFSET);
+      return { model, placement: { x, z: TRAFFIC_LIGHTS.START_Z + index * TRAFFIC_LIGHTS.SPACING, rotationY: 0, span: TRAFFIC_LIGHTS.COUNT_PER_SIDE * TRAFFIC_LIGHTS.SPACING } };
+    });
+  };
+
+  layRoad();
+  STREET_SIDES.forEach(lineStreetSide);
 
   return {
     scroll: (distance) => {
       for (const piece of pieces) {
-        piece.mesh.position.z -= distance;
-        if (piece.mesh.position.z < ENVIRONMENT_DESPAWN_Z) {
-          piece.mesh.position.z += piece.span;
+        piece.object.position.z -= distance;
+        if (piece.object.position.z < STREET.DESPAWN_Z) {
+          piece.object.position.z += piece.span;
         }
       }
     },
     dispose: () => {
-      for (const mesh of owned) {
-        scene.remove(mesh);
-        disposeObject(mesh);
-      }
+      pieces.forEach((piece) => scene.remove(piece.object));
+      owned.forEach((model) => model.dispose());
+      pieces.length = 0;
+      owned.length = 0;
     },
   };
 };

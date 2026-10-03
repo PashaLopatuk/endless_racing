@@ -1,162 +1,131 @@
-import * as THREE from "three";
+import { BATCH_LAYER } from "../constants/assets";
+import { MIRRORED_SIDES } from "../constants/world";
+import { BAY_WINDOW, WINDOW_COLORS, WINDOW_FRAME, WINDOW_KIND, WINDOW_SHAPES, type FlatWindowKind, type GlowProfile, type WindowKind, type WindowShape } from "../constants/windows";
+import type { Rng } from "../types";
+import { mixHex } from "../util/color";
+import { chance, pick, randomIn } from "../util/random";
+import type { MeshBatch } from "./meshBatch";
 
-import { addBox, lambert } from "./mesh";
+export interface WindowPlacement {
+  kind: WindowKind;
+  /** Local X of the facade plane the window sits in. */
+  faceX: number;
+  y: number;
+  z: number;
+  trim: number;
+  glow: GlowProfile;
+  random: Rng;
+}
 
-const GLASS_WARM = 0xe6c48a;
-const GLASS_COOL = 0x8eb4c4;
-const GLASS_DARK = 0x121820;
+interface FrameSpec {
+  faceX: number;
+  y: number;
+  z: number;
+  width: number;
+  height: number;
+  color: number;
+}
 
-export const WINDOW_KIND = {
-  PUNCHED: "punched",
-  BAY: "bay",
-  STRIP: "strip",
-  SLIT: "slit",
-  GRID: "grid",
-} as const;
-
-export type WindowKind = (typeof WINDOW_KIND)[keyof typeof WINDOW_KIND];
-
-export type WindowKit = {
-  frame: THREE.MeshLambertMaterial;
-  recess: THREE.MeshLambertMaterial;
-  trim: THREE.MeshLambertMaterial;
-  glassWarm: THREE.Material;
-  glassCool: THREE.Material;
-  glassDark: THREE.Material;
-};
-
-const keep = (material: THREE.Material): THREE.Material => {
-  material.userData.keepAlive = true;
-  return material;
-};
-
-const GLASS_WARM_MATERIAL = keep(new THREE.MeshBasicMaterial({ color: GLASS_WARM }));
-const GLASS_COOL_MATERIAL = keep(new THREE.MeshBasicMaterial({ color: GLASS_COOL }));
-const GLASS_DARK_MATERIAL = keep(new THREE.MeshBasicMaterial({ color: GLASS_DARK }));
-
-export const createWindowKit = (trimColor: number): WindowKit => {
-  return {
-    frame: lambert(0x1a1c20),
-    recess: lambert(0x07080b),
-    trim: lambert(trimColor),
-    glassWarm: GLASS_WARM_MATERIAL,
-    glassCool: GLASS_COOL_MATERIAL,
-    glassDark: GLASS_DARK_MATERIAL,
-  };
-};
-
-const glassFor = (kit: WindowKit, lit: boolean, warm: boolean): THREE.Material => {
-  if (!lit) {
-    return kit.glassDark;
+/** Each pane rolls its own light: off, or a random tint at a random brightness. */
+export const windowGlowColor = (random: Rng, profile: GlowProfile): number => {
+  if (!chance(random, profile.litChance)) {
+    return WINDOW_COLORS.DARK_GLASS;
   }
-  return warm ? kit.glassWarm : kit.glassCool;
+  return mixHex(WINDOW_COLORS.DARK_GLASS, pick(random, profile.tints), randomIn(random, profile.intensity));
 };
 
-const addFrame = (
-  group: THREE.Group,
-  faceX: number,
-  y: number,
-  z: number,
-  width: number,
-  height: number,
-  material: THREE.Material,
-) => {
-  const depth = 0.14;
-  const bar = 0.1;
-  const x = faceX + depth / 2;
-  addBox(group, depth, bar, width + bar, x, y + height / 2, z, material);
-  addBox(group, depth, bar, width + bar, x, y - height / 2, z, material);
-  addBox(group, depth, height, bar, x, y, z - width / 2, material);
-  addBox(group, depth, height, bar, x, y, z + width / 2, material);
+const addFrame = (batch: MeshBatch, { faceX, y, z, width, height, color }: FrameSpec) => {
+  const { DEPTH, BAR } = WINDOW_FRAME;
+  const x = faceX + DEPTH / 2;
+  batch.addBox({ size: [DEPTH, BAR, width + BAR], position: [x, y + height / 2, z], color });
+  batch.addBox({ size: [DEPTH, BAR, width + BAR], position: [x, y - height / 2, z], color });
+  batch.addBox({ size: [DEPTH, height, BAR], position: [x, y, z - width / 2], color });
+  batch.addBox({ size: [DEPTH, height, BAR], position: [x, y, z + width / 2], color });
 };
 
-const addPunchedWindow = (
-  group: THREE.Group,
-  faceX: number,
-  y: number,
-  z: number,
-  kit: WindowKit,
-  lit: boolean,
-  warm: boolean,
-) => {
-  const width = 0.78;
-  const height = 1.2;
-  addBox(group, 0.22, height, width, faceX - 0.04, y, z, kit.recess);
-  addFrame(group, faceX, y, z, width, height, kit.frame);
-  addBox(group, 0.06, height - 0.22, width - 0.18, faceX + 0.02, y, z, glassFor(kit, lit, warm));
-  addBox(group, 0.22, 0.08, width + 0.28, faceX + 0.1, y - height / 2 - 0.02, z, kit.trim);
-};
+const addPanes = (batch: MeshBatch, placement: WindowPlacement, shape: WindowShape, frameColor: number) => {
+  const { faceX, y, z, glow, random } = placement;
+  const glassWidth = shape.width - WINDOW_FRAME.GLASS_MARGIN;
+  const glassHeight = shape.height - WINDOW_FRAME.GLASS_MARGIN;
+  const paneWidth = glassWidth / shape.panes;
+  const hasMullions = shape.panes > 1;
+  const firstPaneZ = z - glassWidth / 2 + paneWidth / 2;
 
-const addBayWindow = (group: THREE.Group, faceX: number, y: number, z: number, kit: WindowKit, lit: boolean, warm: boolean) => {
-  const glass = glassFor(kit, lit, warm);
-  addBox(group, 0.62, 1.45, 1.45, faceX + 0.28, y, z, kit.trim);
-  addBox(group, 0.08, 1.05, 1.05, faceX + 0.6, y + 0.05, z, glass);
-  addBox(group, 0.4, 0.9, 0.06, faceX + 0.28, y + 0.05, z - 0.72, glass);
-  addBox(group, 0.4, 0.9, 0.06, faceX + 0.28, y + 0.05, z + 0.72, glass);
-  addBox(group, 0.74, 0.1, 1.65, faceX + 0.3, y + 0.78, z, kit.frame);
-  addBox(group, 0.78, 0.1, 1.7, faceX + 0.32, y - 0.72, z, kit.trim);
-};
-
-const addStripWindow = (group: THREE.Group, faceX: number, y: number, z: number, kit: WindowKit, lit: boolean, warm: boolean) => {
-  const width = 2.6;
-  const height = 0.72;
-  const panes = 4;
-  addBox(group, 0.18, height, width, faceX - 0.02, y, z, kit.recess);
-  addFrame(group, faceX, y, z, width, height, kit.frame);
-  const paneWidth = (width - 0.2) / panes;
-  for (let index = 0; index < panes; index += 1) {
-    const paneZ = z - width / 2 + 0.16 + paneWidth / 2 + index * paneWidth;
-    addBox(group, 0.05, height - 0.18, paneWidth - 0.08, faceX + 0.03, y, paneZ, glassFor(kit, lit, index % 2 === 0 ? warm : !warm));
+  for (let pane = 0; pane < shape.panes; pane += 1) {
+    batch.addBox({
+      size: [WINDOW_FRAME.GLASS_THICKNESS, glassHeight, hasMullions ? paneWidth - WINDOW_FRAME.MULLION_WIDTH : paneWidth],
+      position: [faceX + WINDOW_FRAME.GLASS_OFFSET, y, firstPaneZ + pane * paneWidth],
+      color: windowGlowColor(random, glow),
+      layer: BATCH_LAYER.GLOW,
+    });
   }
-  for (let index = 1; index < panes; index += 1) {
-    const mullionZ = z - width / 2 + 0.16 + index * paneWidth;
-    addBox(group, 0.1, height - 0.08, 0.06, faceX + 0.06, y, mullionZ, kit.frame);
+  for (let mullion = 1; mullion < shape.panes; mullion += 1) {
+    batch.addBox({
+      size: [WINDOW_FRAME.MULLION_DEPTH, glassHeight, WINDOW_FRAME.MULLION_WIDTH],
+      position: [faceX + WINDOW_FRAME.MULLION_OFFSET, y, z - glassWidth / 2 + mullion * paneWidth],
+      color: frameColor,
+    });
   }
 };
 
-const addSlitWindow = (group: THREE.Group, faceX: number, y: number, z: number, kit: WindowKit, lit: boolean, warm: boolean) => {
-  const width = 0.32;
-  const height = 2.15;
-  addBox(group, 0.28, height, width, faceX - 0.06, y, z, kit.recess);
-  addFrame(group, faceX, y, z, width + 0.16, height, kit.trim);
-  addBox(group, 0.05, height - 0.28, width - 0.08, faceX + 0.02, y, z, glassFor(kit, lit, warm));
-  addBox(group, 0.12, 0.08, width + 0.2, faceX + 0.08, y, z, kit.frame);
-};
+const addFlatWindow = (batch: MeshBatch, placement: WindowPlacement, kind: FlatWindowKind) => {
+  const shape = WINDOW_SHAPES[kind];
+  const { faceX, y, z, trim } = placement;
+  const frameColor = shape.useTrimFrame ? trim : WINDOW_COLORS.FRAME;
+  const barX = faceX + WINDOW_FRAME.MULLION_OFFSET;
+  const innerHeight = shape.height - WINDOW_FRAME.GLASS_MARGIN;
+  const innerWidth = shape.width - WINDOW_FRAME.GLASS_MARGIN;
 
-const addGridWindow = (group: THREE.Group, faceX: number, y: number, z: number, kit: WindowKit, lit: boolean, warm: boolean) => {
-  const size = 1.15;
-  addBox(group, 0.2, size, size, faceX - 0.02, y, z, kit.recess);
-  addFrame(group, faceX, y, z, size, size, kit.frame);
-  addBox(group, 0.05, size - 0.2, size - 0.2, faceX + 0.02, y, z, glassFor(kit, lit, warm));
-  addBox(group, 0.1, size - 0.12, 0.07, faceX + 0.07, y, z, kit.frame);
-  addBox(group, 0.1, 0.07, size - 0.12, faceX + 0.07, y, z, kit.frame);
-};
+  batch.addBox({
+    size: [WINDOW_FRAME.RECESS_DEPTH, shape.height, shape.width],
+    position: [faceX + WINDOW_FRAME.RECESS_PROTRUSION - WINDOW_FRAME.RECESS_DEPTH / 2, y, z],
+    color: WINDOW_COLORS.RECESS,
+  });
+  addFrame(batch, { faceX, y, z, width: shape.width, height: shape.height, color: frameColor });
+  addPanes(batch, placement, shape, frameColor);
 
-export const addWindow = (
-  group: THREE.Group,
-  kind: WindowKind,
-  faceX: number,
-  y: number,
-  z: number,
-  kit: WindowKit,
-  lit: boolean,
-  warm: boolean,
-) => {
-  switch (kind) {
-    case WINDOW_KIND.BAY:
-      addBayWindow(group, faceX, y, z, kit, lit, warm);
-      return;
-    case WINDOW_KIND.STRIP:
-      addStripWindow(group, faceX, y, z, kit, lit, warm);
-      return;
-    case WINDOW_KIND.SLIT:
-      addSlitWindow(group, faceX, y, z, kit, lit, warm);
-      return;
-    case WINDOW_KIND.GRID:
-      addGridWindow(group, faceX, y, z, kit, lit, warm);
-      return;
-    case WINDOW_KIND.PUNCHED:
-      addPunchedWindow(group, faceX, y, z, kit, lit, warm);
-      return;
+  if (shape.hasCross) {
+    batch.addBox({ size: [WINDOW_FRAME.MULLION_DEPTH, innerHeight, WINDOW_FRAME.MULLION_WIDTH], position: [barX, y, z], color: frameColor });
   }
+  if (shape.hasCross || shape.hasTransom) {
+    batch.addBox({ size: [WINDOW_FRAME.MULLION_DEPTH, WINDOW_FRAME.MULLION_WIDTH, innerWidth], position: [barX, y, z], color: frameColor });
+  }
+  if (shape.hasSill) {
+    batch.addBox({
+      size: [WINDOW_FRAME.SILL_DEPTH, WINDOW_FRAME.SILL_HEIGHT, shape.width + WINDOW_FRAME.SILL_OVERHANG],
+      position: [faceX + WINDOW_FRAME.SILL_OFFSET, y - shape.height / 2 - WINDOW_FRAME.SILL_HEIGHT / 2, z],
+      color: trim,
+    });
+  }
+};
+
+const addBayWindow = (batch: MeshBatch, { faceX, y, z, trim, glow, random }: WindowPlacement) => {
+  const glassY = y + BAY_WINDOW.glassLift;
+  batch.addBox({ size: BAY_WINDOW.box, position: [faceX + BAY_WINDOW.boxOffset, y, z], color: trim });
+  batch.addBox({
+    size: BAY_WINDOW.frontGlass,
+    position: [faceX + BAY_WINDOW.frontOffset, glassY, z],
+    color: windowGlowColor(random, glow),
+    layer: BATCH_LAYER.GLOW,
+  });
+  for (const side of MIRRORED_SIDES) {
+    batch.addBox({
+      size: BAY_WINDOW.sideGlass,
+      position: [faceX + BAY_WINDOW.boxOffset, glassY, z + side * BAY_WINDOW.sideZ],
+      color: windowGlowColor(random, glow),
+      layer: BATCH_LAYER.GLOW,
+    });
+  }
+  const [topX, topY] = BAY_WINDOW.topCapOffset;
+  const [bottomX, bottomY] = BAY_WINDOW.bottomCapOffset;
+  batch.addBox({ size: BAY_WINDOW.topCap, position: [faceX + topX, y + topY, z], color: WINDOW_COLORS.FRAME });
+  batch.addBox({ size: BAY_WINDOW.bottomCap, position: [faceX + bottomX, y + bottomY, z], color: trim });
+};
+
+export const addWindow = (batch: MeshBatch, placement: WindowPlacement): void => {
+  if (placement.kind === WINDOW_KIND.BAY) {
+    addBayWindow(batch, placement);
+    return;
+  }
+  addFlatWindow(batch, placement, placement.kind);
 };
