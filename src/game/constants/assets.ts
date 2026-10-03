@@ -9,7 +9,10 @@ export const BATCH_LAYER = {
 
 export type BatchLayer = ValueOf<typeof BATCH_LAYER>;
 
-export const BATCH_LAYERS: readonly BatchLayer[] = [BATCH_LAYER.SOLID, BATCH_LAYER.GLOW];
+export const BATCH_LAYERS: readonly BatchLayer[] = [
+  BATCH_LAYER.SOLID,
+  BATCH_LAYER.GLOW,
+];
 
 export const GEOMETRY_ATTRIBUTE = {
   POSITION: "position",
@@ -32,7 +35,7 @@ export const ASSET_KEY = {
   HEADLIGHT_CONE_MATERIAL: "headlight-cone",
 } as const;
 
-/** Warm street-light spill baked into facade vertex colours: strongest on the road face, near the ground. */
+/** Warm street-light spill baked into facade vertex colors: strongest on the road face, near the ground. */
 export const FACADE_SHADE = {
   SPILL_COLOR: 0xffd2a1,
   BASE_WEIGHT: 0.4,

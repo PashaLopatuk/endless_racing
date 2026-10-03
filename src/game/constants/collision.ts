@@ -9,7 +9,7 @@ export const IMPACT_DAMAGE: Readonly<Record<ImpactKind, number>> = {
 };
 
 export const IMPACT_SPEED_LOSS: Readonly<Record<ImpactKind, number>> = {
-  [IMPACT_KIND.SIDE]: 0,
+  [IMPACT_KIND.SIDE]: 1,
   [IMPACT_KIND.FRONT]: 6,
   [IMPACT_KIND.REAR]: 6,
 };

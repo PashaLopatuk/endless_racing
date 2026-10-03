@@ -30,8 +30,22 @@ export const DOOR = {
   KNOB: [0.06, 0.08, 0.08],
   KNOB_OFFSET: 0.12,
   KNOB_Z: 0.24,
-  LAMP: { SIZE: [0.1, 0.18, 0.18], Y: 2.45, OFFSET: 0.1, Z: 0.7, COLOR: 0xffd08a },
-  STEP: { COUNT: 3, DEPTH: 0.28, HEIGHT: 0.14, WIDTH: 1.15, WIDTH_SHRINK: 0.08, RUN: 0.22, OFFSET: 0.2 },
+  LAMP: {
+    SIZE: [0.1, 0.18, 0.18],
+    Y: 2.45,
+    OFFSET: 0.1,
+    Z: 0.7,
+    COLOR: 0xffd08a,
+  },
+  STEP: {
+    COUNT: 3,
+    DEPTH: 0.28,
+    HEIGHT: 0.14,
+    WIDTH: 1.15,
+    WIDTH_SHRINK: 0.08,
+    RUN: 0.22,
+    OFFSET: 0.2,
+  },
 } as const;
 
 export const BROWNSTONE = {
@@ -59,7 +73,12 @@ export const GABLE_HOUSE = {
   UPPER_WINDOW_Y: 3.4,
   UPPER_WINDOW_Z_RATIO: -0.22,
   DOOR_Z_RATIO: 0.22,
-  CHIMNEY: { SIZE: [0.45, 1.6, 0.45], X_RATIO: -0.18, Z_RATIO: -0.15, ROOF_RATIO: 0.45 },
+  CHIMNEY: {
+    SIZE: [0.45, 1.6, 0.45],
+    X_RATIO: -0.18,
+    Z_RATIO: -0.15,
+    ROOF_RATIO: 0.45,
+  },
 } as const;
 
 export const TOWNHOUSE = {
@@ -118,7 +137,13 @@ export const SHOP_HOUSE = {
   HEIGHT: [6.5, 8],
   STOREFRONT: { Y: 1.4, Z_RATIO: -0.1 },
   DOOR_Z_RATIO: 0.32,
-  AWNING: { DEPTH: 1.4, THICKNESS: 0.08, Y: 2.75, TILT: 0.35, LENGTH_RATIO: 0.8 },
+  AWNING: {
+    DEPTH: 1.4,
+    THICKNESS: 0.08,
+    Y: 2.75,
+    TILT: 0.35,
+    LENGTH_RATIO: 0.8,
+  },
   SIGN: { HEIGHT: 0.5, Y: 3.25, DEPTH: 0.1, LENGTH_RATIO: 0.6 },
   UPPER_WINDOW_Y: 5,
   UPPER_WINDOW_SPREAD_RATIO: 0.25,

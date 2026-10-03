@@ -23,11 +23,51 @@ export interface WindowShape {
 }
 
 export const WINDOW_SHAPES: Readonly<Record<FlatWindowKind, WindowShape>> = {
-  [WINDOW_KIND.PUNCHED]: { width: 0.78, height: 1.2, panes: 1, hasCross: false, hasTransom: false, hasSill: true, useTrimFrame: false },
-  [WINDOW_KIND.STRIP]: { width: 2.6, height: 0.72, panes: 4, hasCross: false, hasTransom: false, hasSill: false, useTrimFrame: false },
-  [WINDOW_KIND.SLIT]: { width: 0.32, height: 2.15, panes: 1, hasCross: false, hasTransom: true, hasSill: false, useTrimFrame: true },
-  [WINDOW_KIND.GRID]: { width: 1.15, height: 1.15, panes: 1, hasCross: true, hasTransom: false, hasSill: false, useTrimFrame: false },
-  [WINDOW_KIND.SHOP]: { width: 3.2, height: 2.2, panes: 3, hasCross: false, hasTransom: true, hasSill: false, useTrimFrame: true },
+  [WINDOW_KIND.PUNCHED]: {
+    width: 0.78,
+    height: 1.2,
+    panes: 1,
+    hasCross: false,
+    hasTransom: false,
+    hasSill: true,
+    useTrimFrame: false,
+  },
+  [WINDOW_KIND.STRIP]: {
+    width: 2.6,
+    height: 0.72,
+    panes: 4,
+    hasCross: false,
+    hasTransom: false,
+    hasSill: false,
+    useTrimFrame: false,
+  },
+  [WINDOW_KIND.SLIT]: {
+    width: 0.32,
+    height: 2.15,
+    panes: 1,
+    hasCross: false,
+    hasTransom: true,
+    hasSill: false,
+    useTrimFrame: true,
+  },
+  [WINDOW_KIND.GRID]: {
+    width: 1.15,
+    height: 1.15,
+    panes: 1,
+    hasCross: true,
+    hasTransom: false,
+    hasSill: false,
+    useTrimFrame: false,
+  },
+  [WINDOW_KIND.SHOP]: {
+    width: 3.2,
+    height: 2.2,
+    panes: 3,
+    hasCross: false,
+    hasTransom: true,
+    hasSill: false,
+    useTrimFrame: true,
+  },
 };
 
 /**
@@ -93,7 +133,19 @@ export interface GlowProfile {
 
 /** How likely a pane is lit and how bright it glows, per building use. */
 export const GLOW_PROFILE = {
-  RESIDENTIAL: { litChance: 0.68, intensity: [0.3, 1], tints: [0xe6c48a, 0xffb86b, 0xffd9a0, 0x8eb4c4, 0xb0c8ff, 0xffe8c0] },
-  OFFICE: { litChance: 0.52, intensity: [0.25, 0.95], tints: [0xcfe3ff, 0x8eb4c4, 0xe8f0ff, 0xe6c48a] },
-  STOREFRONT: { litChance: 0.95, intensity: [0.7, 1], tints: [0xffe2b0, 0xfff4dc, 0xd8ecff] },
+  RESIDENTIAL: {
+    litChance: 0.68,
+    intensity: [0.3, 1],
+    tints: [0xe6c48a, 0xffb86b, 0xffd9a0, 0x8eb4c4, 0xb0c8ff, 0xffe8c0],
+  },
+  OFFICE: {
+    litChance: 0.52,
+    intensity: [0.25, 0.95],
+    tints: [0xcfe3ff, 0x8eb4c4, 0xe8f0ff, 0xe6c48a],
+  },
+  STOREFRONT: {
+    litChance: 0.95,
+    intensity: [0.7, 1],
+    tints: [0xffe2b0, 0xfff4dc, 0xd8ecff],
+  },
 } as const satisfies Record<string, GlowProfile>;

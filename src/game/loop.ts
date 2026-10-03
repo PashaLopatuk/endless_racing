@@ -11,9 +11,15 @@ export const startLoop = (tick: (dt: number) => void): (() => void) => {
     if (!isRunning) {
       return;
     }
-    const dt = Math.min((now - previous) / UNITS.MS_PER_SECOND, SIMULATION.MAX_FRAME_DELTA);
+
+    const dt = Math.min(
+      (now - previous) / UNITS.MS_PER_SECOND,
+      SIMULATION.MAX_FRAME_DELTA,
+    );
+
     previous = now;
     tick(dt);
+
     frameId = requestAnimationFrame(frame);
   };
 

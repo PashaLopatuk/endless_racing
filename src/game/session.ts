@@ -1,3 +1,5 @@
+import { compareObjects } from "../util/compare";
+
 import { sharedAssets } from "./assets/sharedAssets";
 import { createCollisionSystem } from "./collision";
 import { PLAYER } from "./constants/player";
@@ -27,54 +29,69 @@ export interface GameSession {
   dispose(): void;
 }
 
-const IDLE_GESTURE: DriveGesture = Object.freeze({ isActive: false, deltaX: 0, deltaY: 0 });
+const IDLE_GESTURE: DriveGesture = Object.freeze({
+  isActive: false,
+  deltaX: 0,
+  deltaY: 0,
+});
 
-const isSameHud = (previous: GameHudState | null, next: GameHudState): boolean => {
-  return (
-    previous !== null &&
-    previous.speedKmh === next.speedKmh &&
-    previous.health === next.health &&
-    previous.isGameOver === next.isGameOver &&
-    previous.isPaused === next.isPaused
-  );
-};
-
-export const createGameSession = ({ container, physics, callbacks }: GameSessionOptions): GameSession => {
+export const createGameSession = ({
+  container,
+  physics,
+  callbacks,
+}: GameSessionOptions): GameSession => {
   const view = createGameScene(container);
   const input = createTouchInput();
   const player = createPlayer(physics.world, view.scene);
   const traffic = createTraffic(physics.world, view.scene);
   const environment = createEnvironment(view.scene);
   const collisions = createCollisionSystem({ player, traffic });
+
   view.warmUp();
 
   let isPaused = false;
-  let accumulator = 0;
+  let deltaTimeAccumulator = 0;
   let simulationTime = 0;
   let lastHud: GameHudState | null = null;
 
   const step = (dt: number) => {
     const isGameOver = player.isWrecked;
+
     player.update(isGameOver ? IDLE_GESTURE : input.read(), dt, isGameOver);
     player.commitPose();
+
     traffic.update(player.speed, dt, !isGameOver);
+
     environment.scroll(player.speed * dt);
-    collisions.resolve(physics.step(), { simulationTime, isPlayerHittable: !isGameOver });
+
+    collisions.resolve(physics.step(), {
+      simulationTime,
+      isPlayerHittable: !isGameOver,
+    });
+
     simulationTime += dt;
     player.syncMesh();
     traffic.sync();
   };
 
   const advance = (dt: number) => {
-    accumulator += dt;
+    deltaTimeAccumulator += dt;
+
     let steps = 0;
-    while (accumulator >= SIMULATION.FIXED_TIMESTEP && steps < SIMULATION.MAX_STEPS_PER_FRAME) {
+
+    while (
+      deltaTimeAccumulator >= SIMULATION.FIXED_TIMESTEP &&
+      steps < SIMULATION.MAX_STEPS_PER_FRAME
+    ) {
       step(SIMULATION.FIXED_TIMESTEP);
-      accumulator -= SIMULATION.FIXED_TIMESTEP;
+
+      deltaTimeAccumulator -= SIMULATION.FIXED_TIMESTEP;
+
       steps += 1;
     }
-    if (accumulator >= SIMULATION.FIXED_TIMESTEP) {
-      accumulator = 0;
+
+    if (deltaTimeAccumulator >= SIMULATION.FIXED_TIMESTEP) {
+      deltaTimeAccumulator = 0;
     }
   };
 
@@ -86,25 +103,33 @@ export const createGameSession = ({ container, physics, callbacks }: GameSession
       isGameOver: player.isWrecked,
       isPaused,
     };
-    if (isSameHud(lastHud, hud)) {
+
+    if (lastHud && compareObjects(lastHud, hud)) {
       return;
     }
+
     lastHud = hud;
     callbacks.onTick(hud);
   };
 
   return {
     frame: (dt) => {
-      if (!isPaused) {
-        advance(dt);
+      if (isPaused) {
+        publishHud();
+
+        return;
       }
+
+      advance(dt);
+
       view.follow(player.x, player.speed, dt);
       view.render();
+
       publishHud();
     },
     restart: () => {
       isPaused = false;
-      accumulator = 0;
+      deltaTimeAccumulator = 0;
       collisions.reset();
       player.reset();
       traffic.reset();

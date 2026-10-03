@@ -25,22 +25,39 @@ interface ContactNormal {
   z: number;
 }
 
-const KNOWN_BODY_KINDS = new Set<unknown>(Object.values(BODY_KIND));
+const KNOWN_BODY_KINDS = new Set(Object.values(BODY_KIND));
 
 export const readBodyData = (body: RAPIER.RigidBody): BodyUserData | null => {
   const data = body.userData as Partial<BodyUserData> | undefined;
-  if (!data || !KNOWN_BODY_KINDS.has(data.kind) || typeof data.id !== "number") {
+
+  if (
+    !data ||
+    !KNOWN_BODY_KINDS.has(data.kind!) ||
+    typeof data.id !== "number"
+  ) {
     return null;
   }
+
   return data as BodyUserData;
 };
 
-const readContactNormal = (world: RAPIER.World, colliderA: RAPIER.Collider, colliderB: RAPIER.Collider): ContactNormal | null => {
+const readContactNormal = (
+  world: RAPIER.World,
+  colliderA: RAPIER.Collider,
+  colliderB: RAPIER.Collider,
+): ContactNormal | null => {
   let normal: ContactNormal | null = null;
+
   world.contactPair(colliderA, colliderB, (manifold) => {
     const manifoldNormal = manifold.normal();
-    normal = { x: manifoldNormal.x, y: manifoldNormal.y, z: manifoldNormal.z };
+
+    normal = {
+      x: manifoldNormal.x,
+      y: manifoldNormal.y,
+      z: manifoldNormal.z,
+    };
   });
+
   return normal;
 };
 
@@ -48,7 +65,9 @@ export const createPhysics = async (): Promise<PhysicsWorld> => {
   await RAPIER.init();
 
   const world = new RAPIER.World({ x: 0, y: SIMULATION.GRAVITY, z: 0 });
+
   world.timestep = SIMULATION.FIXED_TIMESTEP;
+
   const eventQueue = new RAPIER.EventQueue(true);
   const contacts: ContactEvent[] = [];
 
@@ -60,15 +79,26 @@ export const createPhysics = async (): Promise<PhysicsWorld> => {
       if (!isStarted) {
         return;
       }
+
       const colliderA = world.getCollider(handleA);
       const colliderB = world.getCollider(handleB);
+
       const bodyA = colliderA.parent();
       const bodyB = colliderB.parent();
+
       if (!bodyA || !bodyB) {
         return;
       }
+
       const normal = readContactNormal(world, colliderA, colliderB);
-      contacts.push({ bodyA, bodyB, normalX: normal?.x ?? 0, normalY: normal?.y ?? 0, normalZ: normal?.z ?? 0 });
+
+      contacts.push({
+        bodyA,
+        bodyB,
+        normalX: normal?.x ?? 0,
+        normalY: normal?.y ?? 0,
+        normalZ: normal?.z ?? 0,
+      });
     });
 
     return contacts;

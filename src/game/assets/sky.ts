@@ -53,12 +53,13 @@ const fragmentShader = /* glsl */ `
 `;
 
 export interface StarSky {
-  readonly object: THREE.Mesh;
+  readonly mesh: THREE.Mesh;
   dispose(): void;
 }
 
 export const createStarSky = (): StarSky => {
   const geometry = new THREE.BoxGeometry(1, 1, 1);
+
   const material = new THREE.ShaderMaterial({
     vertexShader,
     fragmentShader,
@@ -73,13 +74,15 @@ export const createStarSky = (): StarSky => {
     depthWrite: false,
     fog: false,
   });
-  const object = new THREE.Mesh(geometry, material);
-  object.frustumCulled = false;
-  object.renderOrder = SKY.RENDER_ORDER;
-  object.scale.setScalar(SKY.SCALE);
+
+  const mesh = new THREE.Mesh(geometry, material);
+
+  mesh.frustumCulled = false;
+  mesh.renderOrder = SKY.RENDER_ORDER;
+  mesh.scale.setScalar(SKY.SCALE);
 
   return {
-    object,
+    mesh,
     dispose: () => {
       geometry.dispose();
       material.dispose();

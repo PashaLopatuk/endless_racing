@@ -3,7 +3,7 @@ import { DOOR } from "../constants/houses";
 import { BATCH_LAYER } from "../constants/assets";
 import type { GlowProfile, WindowKind } from "../constants/windows";
 import type { Rng } from "../types";
-import { jitterHex } from "../util/color";
+import { randomizeHex } from "../util/color";
 import { chance, pick } from "../util/random";
 import type { MeshBatch } from "./meshBatch";
 import { addWindow } from "./windows";
@@ -50,7 +50,7 @@ export interface WallSpec {
 }
 
 export const pickWallColor = (random: Rng, palette: readonly number[]): number => {
-  return jitterHex(pick(random, palette), random);
+  return randomizeHex(pick(random, palette), random);
 };
 
 export const columnsForDepth = (depth: number): number => {
