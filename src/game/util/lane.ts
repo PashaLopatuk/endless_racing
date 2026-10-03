@@ -1,5 +1,5 @@
-import { LANE_COUNT, LANE_WIDTH } from "../const";
+import { LANE } from "../constants/world";
 
 export const getLaneCenterX = (laneIndex: number): number => {
-  return (laneIndex - (LANE_COUNT - 1) / 2) * LANE_WIDTH;
+  return (laneIndex - (LANE.COUNT - 1) / 2) * LANE.WIDTH;
 };
