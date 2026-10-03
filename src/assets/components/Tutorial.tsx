@@ -1,7 +1,3 @@
-interface IProps {
-  onClose: () => void;
-}
-
-export default function Tutorial({ onClose }: IProps) {
+export default function Tutorial() {
   return <div></div>;
 }
