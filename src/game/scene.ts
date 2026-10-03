@@ -2,11 +2,13 @@ import * as THREE from "three";
 
 import { createStarSky } from "./assets/sky";
 import { CAMERA, GROUND, RENDERER, SCENE_LIGHTING } from "./constants/camera";
-import { PLAYER } from "./constants/player";
+import { SPEED_CORNER_BLUR } from "./constants/postfx";
 import { HALF_PI } from "./constants/world";
-import { approach, clamp } from "./util/math";
+import { createCornerSpeedBlurPass } from "./postfx/cornerSpeedBlur";
+import { getSpeedRatio } from "./util/drive";
+import { approach } from "./util/math";
 
-export interface GameScene {
+export interface IGameScene {
   readonly scene: THREE.Scene;
   follow(playerX: number, speed: number, dt: number): void;
   render(): void;
@@ -56,16 +58,7 @@ const createGround = (): THREE.Mesh<
   return ground;
 };
 
-/** 0 at minimum speed, 1 at maximum speed. */
-const getSpeedRatio = (speed: number): number => {
-  return clamp(
-    (speed - PLAYER.MIN_SPEED) / (PLAYER.MAX_SPEED - PLAYER.MIN_SPEED),
-    0,
-    1,
-  );
-};
-
-export const createGameScene = (container: HTMLElement): GameScene => {
+export const createGameScene = (container: HTMLElement): IGameScene => {
   const scene = new THREE.Scene();
 
   scene.background = new THREE.Color(SCENE_LIGHTING.SKY_COLOR);
@@ -108,11 +101,18 @@ export const createGameScene = (container: HTMLElement): GameScene => {
   renderer.domElement.className = RENDERER.CANVAS_CLASS;
   container.appendChild(renderer.domElement);
 
+  const cornerBlur = createCornerSpeedBlurPass(renderer);
+  let smoothedBlurStrength = 0;
+
+  const drawingBufferSize = () => {
+    const size = new THREE.Vector2();
+    renderer.getDrawingBufferSize(size);
+    return size;
+  };
+
   return {
     scene,
     follow: (playerX, speed, dt) => {
-      console.log("speed: ", speed);
-
       const speedRatio = getSpeedRatio(speed);
 
       camera.position.x = approach(
@@ -136,8 +136,6 @@ export const createGameScene = (container: HTMLElement): GameScene => {
         dt,
       );
 
-      console.log("camera.position: ", camera.position);
-
       if (
         Math.abs(interpolatedCurrentFrameFov - camera.fov) > CAMERA.FOV_EPSILON
       ) {
@@ -145,9 +143,17 @@ export const createGameScene = (container: HTMLElement): GameScene => {
 
         camera.updateProjectionMatrix();
       }
+
+      smoothedBlurStrength = approach(
+        smoothedBlurStrength,
+        getSpeedRatio(speed),
+        SPEED_CORNER_BLUR.SMOOTH_RATE,
+        dt,
+      );
+      cornerBlur.setStrength(smoothedBlurStrength);
     },
     render: () => {
-      renderer.render(scene, camera);
+      cornerBlur.render(renderer, scene, camera);
     },
     resize: () => {
       const newWindowSize = viewportSize(container);
@@ -156,11 +162,16 @@ export const createGameScene = (container: HTMLElement): GameScene => {
       camera.updateProjectionMatrix();
 
       renderer.setSize(newWindowSize.width, newWindowSize.height, false);
+
+      const buffer = drawingBufferSize();
+      cornerBlur.resize(buffer.x, buffer.y);
     },
     warmUp: () => {
       renderer.compile(scene, camera);
+      cornerBlur.render(renderer, scene, camera);
     },
     dispose: () => {
+      cornerBlur.dispose();
       sky.dispose();
       ground.geometry.dispose();
       ground.material.dispose();

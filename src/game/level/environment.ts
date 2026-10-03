@@ -2,33 +2,33 @@ import * as THREE from "three";
 
 import { createBuildingModel } from "../assets/buildings";
 import { createHouseModel } from "../assets/houses";
-import type { BatchedModel, StreetModel } from "../assets/meshBatch";
+import type { IBatchedModel, IStreetModel } from "../assets/meshBatch";
 import { createRoadSegment } from "../assets/road";
 import { createTrafficLightModel } from "../assets/trafficLight";
-import { STREET, STREET_ROW } from "../constants/street";
+import { STREET, STREET_ROW } from "../constants/environment/street";
 import { ROAD_HALF_WIDTH, STREET_SIDE, STREET_SIDES } from "../constants/world";
 
-export interface Environment {
+export interface IEnvironment {
   scroll(distance: number): void;
   dispose(): void;
 }
 
-interface ScrollingPiece {
+interface IScrollingPiece {
   object: THREE.Object3D;
   /** Length of the loop this piece belongs to; it jumps forward by this much after leaving the view. */
   span: number;
 }
 
-interface Placement {
+interface IPlacement {
   x: number;
   z: number;
   rotationY: number;
   span: number;
 }
 
-interface PlacedModel {
-  model: StreetModel;
-  placement: Placement;
+interface IPlacedModel {
+  model: IStreetModel;
+  placement: IPlacement;
 }
 
 const CURB_X = ROAD_HALF_WIDTH + STREET.SIDEWALK_WIDTH;
@@ -36,13 +36,13 @@ const CURB_X = ROAD_HALF_WIDTH + STREET.SIDEWALK_WIDTH;
 const facingRoad = (side: number): number =>
   side === STREET_SIDE.RIGHT ? Math.PI : 0;
 
-export const createEnvironment = (scene: THREE.Scene): Environment => {
-  const pieces: ScrollingPiece[] = [];
-  const owned: BatchedModel[] = [];
+export const createEnvironment = (scene: THREE.Scene): IEnvironment => {
+  const pieces: IScrollingPiece[] = [];
+  const owned: IBatchedModel[] = [];
 
   const place = (
     object: THREE.Object3D,
-    { x, z, rotationY, span }: Placement,
+    { x, z, rotationY, span }: IPlacement,
   ) => {
     object.position.set(x, 0, z);
     object.rotation.y = rotationY;
@@ -51,7 +51,7 @@ export const createEnvironment = (scene: THREE.Scene): Environment => {
     pieces.push({ object, span });
   };
 
-  const placeModel = (model: BatchedModel, placement: Placement) => {
+  const placeModel = (model: IBatchedModel, placement: IPlacement) => {
     owned.push(model);
     place(model.object, placement);
   };
@@ -75,7 +75,7 @@ export const createEnvironment = (scene: THREE.Scene): Environment => {
     }
   };
 
-  const lineRow = (count: number, createAt: (index: number) => PlacedModel) => {
+  const lineRow = (count: number, createAt: (index: number) => IPlacedModel) => {
     for (let index = 0; index < count; index += 1) {
       const { model, placement } = createAt(index);
 

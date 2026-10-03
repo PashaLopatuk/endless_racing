@@ -52,12 +52,12 @@ const fragmentShader = /* glsl */ `
   }
 `;
 
-export interface StarSky {
+export interface IStarSky {
   readonly mesh: THREE.Mesh;
   dispose(): void;
 }
 
-export const createStarSky = (): StarSky => {
+export const createStarSky = (): IStarSky => {
   const geometry = new THREE.BoxGeometry(1, 1, 1);
 
   const material = new THREE.ShaderMaterial({

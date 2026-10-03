@@ -1,15 +1,15 @@
 export const TRAFFIC = {
   FIRST_ID: 1,
-  POOL_SIZE: 12,
-  MAX_ACTIVE: 7,
+  POOL_SIZE: 30,
+  MAX_ACTIVE: 22,
 
-  MIN_SPEED: 6,
-  MAX_SPEED: 11,
+  MIN_SPEED: 7,
+  MAX_SPEED: 16,
   /** NPCs always drift toward the camera at least this fast, so stalled traffic still clears. */
   MIN_CLOSING_SPEED: 0.5,
   LATERAL_DAMPING: 0.986,
 
-  SPAWN_Z: 100,
+  SPAWN_Z: 150,
   SPAWN_Z_JITTER: 22,
   DESPAWN_Z: -20,
   MIN_LANE_GAP: 18,
@@ -42,13 +42,13 @@ export const NPC_PAINT_PALETTE = [
   0x6a6a70, 0x1e1e22, 0x5c5048,
 ] as const;
 
-export interface TrafficSeed {
+export interface ITrafficSeed {
   lane: number;
   z: number;
   cruiseSpeed: number;
 }
 
-export const INITIAL_TRAFFIC: readonly TrafficSeed[] = [
+export const INITIAL_TRAFFIC: readonly ITrafficSeed[] = [
   { lane: 0, z: 32, cruiseSpeed: 7 },
   { lane: 2, z: 50, cruiseSpeed: 9 },
   { lane: 3, z: 68, cruiseSpeed: 8 },

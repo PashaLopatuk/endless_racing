@@ -10,7 +10,7 @@ const MULBERRY = {
   UINT32_RANGE: 4294967296,
 } as const;
 
-export interface Weighted {
+export interface IWeighted {
   weight: number;
 }
 
@@ -50,7 +50,7 @@ export const pick = <T>(random: Rng, items: readonly T[]): T => {
   return items[Math.floor(random() * items.length)];
 };
 
-export const pickWeighted = <T extends Weighted>(
+export const pickWeighted = <T extends IWeighted>(
   random: Rng,
   items: readonly T[],
 ): T => {
@@ -60,6 +60,7 @@ export const pickWeighted = <T extends Weighted>(
 
   for (const item of items) {
     roll -= item.weight;
+
     if (roll < 0) {
       return item;
     }

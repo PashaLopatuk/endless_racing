@@ -2,15 +2,22 @@ import { PLAYER } from "../constants/player";
 import { CAR_SIZE, DRIVABLE_X } from "../constants/world";
 import { clamp } from "./math";
 
-export interface CarPose {
+export interface ICarPose {
   x: number;
   z: number;
   yaw: number;
 }
 
-export const resolveSteerTarget = (anchorX: number, deltaX: number): number => {
+export const resolveSteerTarget = (
+  anchorX: number,
+  deltaX: number,
+  carSpeed: number,
+): number => {
+  const speedRatio = getSpeedRatio(carSpeed);
+  const carSpeedOffset = 1 - speedRatio * PLAYER.STEER_SPEED_RATIO;
+
   return clamp(
-    anchorX - deltaX * PLAYER.STEER_METERS_PER_PIXEL,
+    anchorX - deltaX * PLAYER.STEER_METERS_PER_PIXEL * carSpeedOffset,
     DRIVABLE_X.MIN,
     DRIVABLE_X.MAX,
   );
@@ -35,11 +42,22 @@ export const steerYaw = (frontX: number, rearX: number): number => {
 export const frontPivotPose = (
   frontX: number,
   rearX: number,
-  out: CarPose,
-): CarPose => {
+  out: ICarPose,
+): ICarPose => {
   const yaw = steerYaw(frontX, rearX);
+
   out.yaw = yaw;
   out.x = frontX - Math.sin(yaw) * CAR_SIZE.HALF_LENGTH;
   out.z = CAR_SIZE.HALF_LENGTH * (1 - Math.cos(yaw));
+
   return out;
+};
+
+/** 0 at minimum speed, 1 at maximum speed. */
+export const getSpeedRatio = (speed: number): number => {
+  return clamp(
+    (speed - PLAYER.MIN_SPEED) / (PLAYER.MAX_SPEED - PLAYER.MIN_SPEED),
+    0,
+    1,
+  );
 };

@@ -1,6 +1,6 @@
-import type { ValueOf } from "../types";
+import type { ValueOf } from "../../types";
 
-import { WINDOW_KIND } from "./windows";
+import { WINDOW_KIND } from "./buildingsWindows";
 
 export const BUILDING_STYLE = {
   SLAB: "slab",

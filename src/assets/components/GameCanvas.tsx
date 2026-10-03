@@ -4,11 +4,11 @@ import { HUD_TEXT } from "../../constants/hud";
 import { PLAYER } from "../../game/constants/player";
 import { UNITS } from "../../game/constants/world";
 import { createGame } from "../../game/game";
-import type { GameController, GameHudState } from "../../game/types";
+import type { IGameController, IGameHudState } from "../../game/types";
 
 import "./GameCanvas.css";
 
-const INITIAL_HUD: GameHudState = {
+const INITIAL_HUD: IGameHudState = {
   speedKmh: 0,
   health: PLAYER.MAX_HEALTH,
   maxHealth: PLAYER.MAX_HEALTH,
@@ -16,13 +16,13 @@ const INITIAL_HUD: GameHudState = {
   isPaused: false,
 };
 
-interface OverlayPanelProps {
+interface IOverlayPanelProps {
   title: string;
   actionLabel: string;
   onAction: () => void;
 }
 
-const OverlayPanel = ({ title, actionLabel, onAction }: OverlayPanelProps) => (
+const OverlayPanel = ({ title, actionLabel, onAction }: IOverlayPanelProps) => (
   <div className="game-status-overlay">
     <div className="game-over-panel">
       <h1 className="game-over-title">{title}</h1>
@@ -36,9 +36,9 @@ const OverlayPanel = ({ title, actionLabel, onAction }: OverlayPanelProps) => (
 export const GameCanvas = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasFailed, setHasFailed] = useState(false);
-  const [hud, setHud] = useState<GameHudState>(INITIAL_HUD);
+  const [hud, setHud] = useState<IGameHudState>(INITIAL_HUD);
   const mountRef = useRef<HTMLDivElement>(null);
-  const gameRef = useRef<GameController | null>(null);
+  const gameRef = useRef<IGameController | null>(null);
 
   useEffect(() => {
     const container = mountRef.current;

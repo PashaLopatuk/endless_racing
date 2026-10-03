@@ -5,23 +5,23 @@ import { createCollisionSystem } from "./collision";
 import { PLAYER } from "./constants/player";
 import { SIMULATION } from "./constants/simulation";
 import { UNITS } from "./constants/world";
-import { createTouchInput, type DriveGesture } from "./input";
+import { createTouchInput, type IDriveGesture } from "./input";
 import { createEnvironment } from "./level/environment";
-import type { PhysicsWorld } from "./physics";
+import type { IPhysicsWorld } from "./physics";
 import { createPlayer } from "./player";
 import { createGameScene } from "./scene";
 import { createTraffic } from "./traffic";
-import type { GameCallbacks, GameHudState } from "./types";
+import type { IGameCallbacks, IGameHudState } from "./types";
 
-export interface GameSessionOptions {
+export interface IGameSessionOptions {
   container: HTMLElement;
   /** Ownership passes to the session; it is freed in `dispose`. */
-  physics: PhysicsWorld;
-  callbacks: GameCallbacks;
+  physics: IPhysicsWorld;
+  callbacks: IGameCallbacks;
 }
 
 /** One running race: owns the scene, the actors, and the fixed-step simulation. */
-export interface GameSession {
+export interface IGameSession {
   frame(dt: number): void;
   restart(): void;
   setPaused(isPaused: boolean): void;
@@ -29,7 +29,7 @@ export interface GameSession {
   dispose(): void;
 }
 
-const IDLE_GESTURE: DriveGesture = Object.freeze({
+const IDLE_GESTURE: IDriveGesture = Object.freeze({
   isActive: false,
   deltaX: 0,
   deltaY: 0,
@@ -39,7 +39,7 @@ export const createGameSession = ({
   container,
   physics,
   callbacks,
-}: GameSessionOptions): GameSession => {
+}: IGameSessionOptions): IGameSession => {
   const view = createGameScene(container);
   const input = createTouchInput();
   const player = createPlayer(physics.world, view.scene);
@@ -52,7 +52,7 @@ export const createGameSession = ({
   let isPaused = false;
   let deltaTimeAccumulator = 0;
   let simulationTime = 0;
-  let lastHud: GameHudState | null = null;
+  let lastHud: IGameHudState | null = null;
 
   const step = (dt: number) => {
     const isGameOver = player.isWrecked;
@@ -74,7 +74,7 @@ export const createGameSession = ({
     traffic.sync();
   };
 
-  const advance = (dt: number) => {
+  const processSimulationByDeltaTime = (dt: number) => {
     deltaTimeAccumulator += dt;
 
     let steps = 0;
@@ -96,7 +96,7 @@ export const createGameSession = ({
   };
 
   const publishHud = () => {
-    const hud: GameHudState = {
+    const hud: IGameHudState = {
       speedKmh: Math.round(player.speed * UNITS.KMH_PER_MPS),
       health: Math.ceil(player.health),
       maxHealth: PLAYER.MAX_HEALTH,
@@ -120,7 +120,7 @@ export const createGameSession = ({
         return;
       }
 
-      advance(dt);
+      processSimulationByDeltaTime(dt);
 
       view.follow(player.x, player.speed, dt);
       view.render();

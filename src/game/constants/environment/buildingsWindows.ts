@@ -1,4 +1,4 @@
-import type { Range, ValueOf, Vec3Tuple } from "../types";
+import type { Range, ValueOf, Vec3Tuple } from "../../types";
 
 export const WINDOW_KIND = {
   PUNCHED: "punched",
@@ -12,7 +12,7 @@ export const WINDOW_KIND = {
 export type WindowKind = ValueOf<typeof WINDOW_KIND>;
 export type FlatWindowKind = Exclude<WindowKind, typeof WINDOW_KIND.BAY>;
 
-export interface WindowShape {
+export interface IWindowShape {
   width: number;
   height: number;
   panes: number;
@@ -22,7 +22,7 @@ export interface WindowShape {
   useTrimFrame: boolean;
 }
 
-export const WINDOW_SHAPES: Readonly<Record<FlatWindowKind, WindowShape>> = {
+export const WINDOW_SHAPES: Readonly<Record<FlatWindowKind, IWindowShape>> = {
   [WINDOW_KIND.PUNCHED]: {
     width: 0.78,
     height: 1.2,
@@ -91,7 +91,7 @@ export const WINDOW_FRAME = {
   SILL_OFFSET: 0.1,
 } as const;
 
-export interface BayWindowLayout {
+export interface IBayWindowLayout {
   box: Vec3Tuple;
   boxOffset: number;
   frontGlass: Vec3Tuple;
@@ -105,7 +105,7 @@ export interface BayWindowLayout {
   bottomCapOffset: Vec3Tuple;
 }
 
-export const BAY_WINDOW: BayWindowLayout = {
+export const BAY_WINDOW: IBayWindowLayout = {
   box: [0.62, 1.45, 1.45],
   boxOffset: 0.28,
   frontGlass: [0.08, 1.05, 1.05],
@@ -125,7 +125,7 @@ export const WINDOW_COLORS = {
   DARK_GLASS: 0x121820,
 } as const;
 
-export interface GlowProfile {
+export interface IGlowProfile {
   litChance: number;
   intensity: Range;
   tints: readonly number[];
@@ -136,7 +136,7 @@ export const GLOW_PROFILE = {
   RESIDENTIAL: {
     litChance: 0.68,
     intensity: [0.3, 1],
-    tints: [0xe6c48a, 0xffb86b, 0xffd9a0, 0x8eb4c4, 0xb0c8ff, 0xffe8c0],
+    tints: [0xffd4a0, 0xffc878, 0xf0e0c8, 0xc8d8f0, 0xffe8b8, 0xe8c890],
   },
   OFFICE: {
     litChance: 0.52,
@@ -148,4 +148,4 @@ export const GLOW_PROFILE = {
     intensity: [0.7, 1],
     tints: [0xffe2b0, 0xfff4dc, 0xd8ecff],
   },
-} as const satisfies Record<string, GlowProfile>;
+} as const satisfies Record<string, IGlowProfile>;
