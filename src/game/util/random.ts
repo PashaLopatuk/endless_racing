@@ -60,6 +60,7 @@ export const pickWeighted = <T extends Weighted>(
 
   for (const item of items) {
     roll -= item.weight;
+
     if (roll < 0) {
       return item;
     }

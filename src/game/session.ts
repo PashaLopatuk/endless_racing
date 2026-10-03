@@ -74,7 +74,7 @@ export const createGameSession = ({
     traffic.sync();
   };
 
-  const advance = (dt: number) => {
+  const processSimulationByDeltaTime = (dt: number) => {
     deltaTimeAccumulator += dt;
 
     let steps = 0;
@@ -120,7 +120,7 @@ export const createGameSession = ({
         return;
       }
 
-      advance(dt);
+      processSimulationByDeltaTime(dt);
 
       view.follow(player.x, player.speed, dt);
       view.render();

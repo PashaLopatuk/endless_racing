@@ -5,7 +5,7 @@ import { createHouseModel } from "../assets/houses";
 import type { BatchedModel, StreetModel } from "../assets/meshBatch";
 import { createRoadSegment } from "../assets/road";
 import { createTrafficLightModel } from "../assets/trafficLight";
-import { STREET, STREET_ROW } from "../constants/street";
+import { STREET, STREET_ROW } from "../constants/environment/street";
 import { ROAD_HALF_WIDTH, STREET_SIDE, STREET_SIDES } from "../constants/world";
 
 export interface Environment {

@@ -1,4 +1,4 @@
-import type { Range, ValueOf, Vec3Tuple } from "../types";
+import type { Range, ValueOf, Vec3Tuple } from "../../types";
 
 export const WINDOW_KIND = {
   PUNCHED: "punched",
