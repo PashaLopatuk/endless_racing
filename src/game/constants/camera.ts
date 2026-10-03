@@ -6,7 +6,7 @@ export const CAMERA = {
   NEAR: 0.1,
   FAR: 320,
   HEIGHT: 10,
-  BACK: 11.5,
+  BACK: 13,
   LOOK_AHEAD: 18,
   LOOK_HEIGHT: 1.15,
   FOLLOW: 3.2,

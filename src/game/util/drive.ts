@@ -8,9 +8,16 @@ export interface ICarPose {
   yaw: number;
 }
 
-export const resolveSteerTarget = (anchorX: number, deltaX: number): number => {
+export const resolveSteerTarget = (
+  anchorX: number,
+  deltaX: number,
+  carSpeed: number,
+): number => {
+  const speedRatio = getSpeedRatio(carSpeed);
+  const carSpeedOffset = 1 - speedRatio * PLAYER.STEER_SPEED_RATIO;
+
   return clamp(
-    anchorX - deltaX * PLAYER.STEER_METERS_PER_PIXEL,
+    anchorX - deltaX * PLAYER.STEER_METERS_PER_PIXEL * carSpeedOffset,
     DRIVABLE_X.MIN,
     DRIVABLE_X.MAX,
   );
@@ -44,4 +51,13 @@ export const frontPivotPose = (
   out.z = CAR_SIZE.HALF_LENGTH * (1 - Math.cos(yaw));
 
   return out;
+};
+
+/** 0 at minimum speed, 1 at maximum speed. */
+export const getSpeedRatio = (speed: number): number => {
+  return clamp(
+    (speed - PLAYER.MIN_SPEED) / (PLAYER.MAX_SPEED - PLAYER.MIN_SPEED),
+    0,
+    1,
+  );
 };

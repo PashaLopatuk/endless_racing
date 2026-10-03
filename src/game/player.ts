@@ -141,7 +141,11 @@ export const createPlayer = (
       return;
     }
 
-    const targetFront = resolveSteerTarget(state.anchorX, gesture.deltaX);
+    const targetFront = resolveSteerTarget(
+      state.anchorX,
+      gesture.deltaX,
+      state.speed,
+    );
     const targetSpeed = resolveSpeedTarget(state.anchorSpeed, gesture.deltaY);
 
     state.frontX = clampToRoad(

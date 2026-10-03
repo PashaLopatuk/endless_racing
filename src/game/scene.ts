@@ -5,6 +5,7 @@ import { CAMERA, GROUND, RENDERER, SCENE_LIGHTING } from "./constants/camera";
 import { PLAYER } from "./constants/player";
 import { HALF_PI } from "./constants/world";
 import { approach, clamp } from "./util/math";
+import { getSpeedRatio } from "./util/drive";
 
 export interface IGameScene {
   readonly scene: THREE.Scene;
@@ -56,15 +57,6 @@ const createGround = (): THREE.Mesh<
   return ground;
 };
 
-/** 0 at minimum speed, 1 at maximum speed. */
-const getSpeedRatio = (speed: number): number => {
-  return clamp(
-    (speed - PLAYER.MIN_SPEED) / (PLAYER.MAX_SPEED - PLAYER.MIN_SPEED),
-    0,
-    1,
-  );
-};
-
 export const createGameScene = (container: HTMLElement): IGameScene => {
   const scene = new THREE.Scene();
 
@@ -111,8 +103,6 @@ export const createGameScene = (container: HTMLElement): IGameScene => {
   return {
     scene,
     follow: (playerX, speed, dt) => {
-      console.log("speed: ", speed);
-
       const speedRatio = getSpeedRatio(speed);
 
       camera.position.x = approach(
@@ -135,8 +125,6 @@ export const createGameScene = (container: HTMLElement): IGameScene => {
         CAMERA.FOV_RESPONSE,
         dt,
       );
-
-      console.log("camera.position: ", camera.position);
 
       if (
         Math.abs(interpolatedCurrentFrameFov - camera.fov) > CAMERA.FOV_EPSILON
