@@ -119,7 +119,7 @@ const addRounded = (
 
 const addWheels = (
   group: THREE.Group,
-  { frontZ, rearZ, halfTrack }: IWheelLayout,
+  { frontZ, rearZ, halfTrack, extraRearZ }: IWheelLayout,
 ) => {
   const { RADIUS, WIDTH, SEGMENTS, Y, COLOR, ROUGHNESS, METALNESS } =
     VEHICLE_STYLE.WHEEL;
@@ -138,7 +138,10 @@ const addWheels = (
       }),
   );
 
-  for (const z of [frontZ, rearZ]) {
+  const zList =
+    extraRearZ !== undefined ? [frontZ, rearZ, extraRearZ] : [frontZ, rearZ];
+
+  for (const z of zList) {
     for (const side of MIRRORED_SIDES) {
       const wheel = new THREE.Mesh(geometry, material);
       wheel.rotation.z = HALF_PI;

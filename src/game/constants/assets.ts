@@ -40,7 +40,8 @@ export const FACADE_SHADE = {
   SPILL_COLOR: 0xffd2a1,
   BASE_WEIGHT: 0.4,
   LOW_WEIGHT: 0.6,
-  STRENGTH: 0.62,
-  MAX_MIX: 0.58,
+  /** Kept moderate so brick, limestone, and grey reads stay distinct under street lights. */
+  STRENGTH: 0.42,
+  MAX_MIX: 0.38,
   MIN_SPAN: 0.001,
 } as const;

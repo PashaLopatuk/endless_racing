@@ -6,6 +6,7 @@ export const VEHICLE_KIND = {
   VAN: "van",
   PICKUP: "pickup",
   TAXI: "taxi",
+  BUS: "bus",
 } as const;
 
 export type VehicleKind = ValueOf<typeof VEHICLE_KIND>;
@@ -36,6 +37,7 @@ export interface IWheelLayout {
   frontZ: number;
   rearZ: number;
   halfTrack: number;
+  extraRearZ?: number;
 }
 
 export interface ILampLayout {
@@ -180,6 +182,60 @@ export const VEHICLE_BLUEPRINTS: Readonly<
       headY: 0.1,
       headZ: 1.64,
       halfSpan: 0.54,
+    },
+  },
+  [VEHICLE_KIND.BUS]: {
+    parts: [
+      {
+        role: VEHICLE_PART_ROLE.PAINT,
+        size: [1.88, 0.52, 4.6],
+        radius: 0.1,
+        position: [0, 0.06, 0],
+      },
+      {
+        role: VEHICLE_PART_ROLE.GLASS,
+        size: [1.82, 0.44, 4.46],
+        radius: 0.08,
+        position: [0, 0.54, 0],
+      },
+      {
+        role: VEHICLE_PART_ROLE.PAINT,
+        size: [1.88, 0.2, 4.54],
+        radius: 0.08,
+        position: [0, 0.84, 0],
+      },
+      {
+        role: VEHICLE_PART_ROLE.TRIM,
+        size: [1.0, 0.12, 1.4],
+        radius: 0.04,
+        position: [0, 0.98, 0.2],
+      },
+      {
+        role: VEHICLE_PART_ROLE.SIGN,
+        size: [0.92, 0.14, 0.12],
+        radius: 0.03,
+        position: [0, 0.78, 2.24],
+      },
+      {
+        role: VEHICLE_PART_ROLE.TRIM,
+        size: [1.84, 0.14, 0.16],
+        radius: 0.04,
+        position: [0, -0.12, 2.28],
+      },
+      {
+        role: VEHICLE_PART_ROLE.TRIM,
+        size: [1.84, 0.14, 0.16],
+        radius: 0.04,
+        position: [0, -0.12, -2.28],
+      },
+    ],
+    wheels: { frontZ: 1.5, rearZ: -1.0, extraRearZ: -1.65, halfTrack: 0.82 },
+    lamps: {
+      tailY: 0.14,
+      tailZ: -2.31,
+      headY: 0.12,
+      headZ: 2.31,
+      halfSpan: 0.68,
     },
   },
 };

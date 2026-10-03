@@ -18,7 +18,7 @@ import {
   NEON_PALETTE,
   OFFICE_PALETTE,
   TOWER_PALETTE,
-  TRIM_PALETTE,
+  BUILDING_TRIM_PALETTE,
   WAREHOUSE_PALETTE,
 } from "../constants/palette";
 import {
@@ -41,7 +41,7 @@ import {
   addWall,
   addWindowRow,
   columnZ,
-  pickWallColor,
+  pickBuildingWallColor,
 } from "./facade";
 import {
   createMeshBatch,
@@ -110,7 +110,7 @@ const buildSlabTower: BuildingBuilder = (random) => {
     random,
     pickWeighted(random, SLAB_TOWER.HEIGHT_CLASSES).height,
   );
-  const trim = pick(random, TRIM_PALETTE);
+  const trim = pick(random, BUILDING_TRIM_PALETTE);
   const faceX = width / 2;
   const batch = createMeshBatch();
 
@@ -118,7 +118,7 @@ const buildSlabTower: BuildingBuilder = (random) => {
     width,
     height,
     depth,
-    color: pickWallColor(random, TOWER_PALETTE),
+    color: pickBuildingWallColor(random, TOWER_PALETTE),
   });
 
   const roof = SLAB_TOWER.ROOF_BLOCK;
@@ -163,8 +163,8 @@ const buildSlabTower: BuildingBuilder = (random) => {
 const buildSetbackTower: BuildingBuilder = (random) => {
   const width = randomIn(random, SETBACK_TOWER.WIDTH);
   const depth = randomIn(random, SETBACK_TOWER.DEPTH);
-  const wall = pickWallColor(random, TOWER_PALETTE);
-  const trim = pick(random, TRIM_PALETTE);
+  const wall = pickBuildingWallColor(random, TOWER_PALETTE);
+  const trim = pick(random, BUILDING_TRIM_PALETTE);
   const batch = createMeshBatch();
 
   let baseY = 0;
@@ -256,7 +256,7 @@ const buildWarehouse: BuildingBuilder = (random) => {
   const width = randomIn(random, WAREHOUSE.WIDTH);
   const depth = randomIn(random, WAREHOUSE.DEPTH);
   const height = randomIn(random, WAREHOUSE.HEIGHT);
-  const trim = pick(random, TRIM_PALETTE);
+  const trim = pick(random, BUILDING_TRIM_PALETTE);
   const faceX = width / 2;
   const batch = createMeshBatch();
 
@@ -264,7 +264,7 @@ const buildWarehouse: BuildingBuilder = (random) => {
     width,
     height,
     depth,
-    color: pickWallColor(random, WAREHOUSE_PALETTE),
+    color: pickBuildingWallColor(random, WAREHOUSE_PALETTE),
   });
 
   addCornice(batch, {
@@ -326,7 +326,7 @@ const buildOfficeTower: BuildingBuilder = (random) => {
     width,
     height,
     depth,
-    color: pickWallColor(random, OFFICE_PALETTE),
+    color: pickBuildingWallColor(random, OFFICE_PALETTE),
   });
 
   const { PANE_WIDTH, FLOOR_HEIGHT, LOBBY_HEIGHT, MULLION, CROWN } =
@@ -458,7 +458,7 @@ const buildApartmentBlock: BuildingBuilder = (random) => {
   const width = randomIn(random, APARTMENT_BLOCK.WIDTH);
   const depth = randomIn(random, APARTMENT_BLOCK.DEPTH);
   const height = randomIn(random, APARTMENT_BLOCK.HEIGHT);
-  const trim = pick(random, TRIM_PALETTE);
+  const trim = pick(random, BUILDING_TRIM_PALETTE);
   const faceX = width / 2;
   const columns = randomIntIn(random, APARTMENT_BLOCK.COLUMNS);
   const kind = pick(random, APARTMENT_BLOCK.WINDOW_KINDS);
@@ -473,7 +473,7 @@ const buildApartmentBlock: BuildingBuilder = (random) => {
     width,
     height,
     depth,
-    color: pickWallColor(random, APARTMENT_PALETTE),
+    color: pickBuildingWallColor(random, APARTMENT_PALETTE),
   });
 
   addCornice(batch, {

@@ -6,7 +6,7 @@ import type {
   WindowKind,
 } from "../constants/environment/buildingsWindows";
 import type { Rng } from "../types";
-import { randomizeHex } from "../util/color";
+import { randomizeBuildingHex, randomizeHex } from "../util/color";
 import { chance, pick } from "../util/random";
 import type { IMeshBatch } from "./meshBatch";
 import { addWindow } from "./windows";
@@ -57,6 +57,13 @@ export const pickWallColor = (
   palette: readonly number[],
 ): number => {
   return randomizeHex(pick(random, palette), random);
+};
+
+export const pickBuildingWallColor = (
+  random: Rng,
+  palette: readonly number[],
+): number => {
+  return randomizeBuildingHex(pick(random, palette), random);
 };
 
 export const columnsForDepth = (depth: number): number => {

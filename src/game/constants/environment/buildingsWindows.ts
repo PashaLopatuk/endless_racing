@@ -136,7 +136,7 @@ export const GLOW_PROFILE = {
   RESIDENTIAL: {
     litChance: 0.68,
     intensity: [0.3, 1],
-    tints: [0xe6c48a, 0xffb86b, 0xffd9a0, 0x8eb4c4, 0xb0c8ff, 0xffe8c0],
+    tints: [0xffd4a0, 0xffc878, 0xf0e0c8, 0xc8d8f0, 0xffe8b8, 0xe8c890],
   },
   OFFICE: {
     litChance: 0.52,

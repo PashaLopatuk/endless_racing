@@ -1,15 +1,30 @@
+/** Midtown / downtown towers: limestone, brick setbacks, granite curtain walls. */
 export const TOWER_PALETTE = [
-  0x141820, 0x1c1b18, 0x10141c, 0x171b24, 0x12161a, 0x1a1420, 0x10201e,
-  0x221a16,
+  0xc8bfb0, 0xb5a898, 0xa09080, 0x9a8878, 0x3e444c, 0x343a42, 0x4a525a,
+  0x8a5048, 0x7a4438, 0x5c6068, 0xc4b4a0, 0x6a5a50, 0x2e3438,
 ] as const;
+
+/** Glass-and-steel office blocks (cool midtown greys and blue-glass tones). */
 export const OFFICE_PALETTE = [
-  0x0e1620, 0x101a1a, 0x16141e, 0x0c1218, 0x1a1a1e,
+  0x2a3440, 0x384858, 0x1e2830, 0x455260, 0x323c48, 0x4a5868, 0x283238,
+  0x3c4854,
 ] as const;
+
+/** Prewar apartments and walk-ups: brownstone, red brick, stucco, cast-iron brown. */
 export const APARTMENT_PALETTE = [
-  0x3a2a24, 0x2e3238, 0x40382c, 0x2a3430, 0x3c2c34, 0x34302a, 0x44302a,
+  0x7a4838, 0x6b3c30, 0x8c5840, 0x5c4840, 0x9a7860, 0x684838, 0x4a5a58,
+  0x886850, 0x543830, 0x706058,
 ] as const;
+
+/** Industrial / loft brick and soot-stained masonry. */
 export const WAREHOUSE_PALETTE = [
-  0x2a2420, 0x312821, 0x241e1c, 0x1e2428, 0x3a221c, 0x2c2a1a,
+  0x5c4030, 0x4a3428, 0x6a5040, 0x3a3028, 0x554438, 0x2a2624, 0x483830,
+  0x645040,
+] as const;
+
+/** Limestone cornices, cast iron, and dark storefront trim on street buildings. */
+export const BUILDING_TRIM_PALETTE = [
+  0xb0a698, 0x8a8078, 0x5a544c, 0x3a3834, 0x9a9088, 0x6a6258, 0x484440,
 ] as const;
 
 export const HOUSE_PALETTE = [
@@ -34,9 +49,16 @@ export const NEON_PALETTE = [
 ] as const;
 export const METAL_PALETTE = [0x2a2e33, 0x3a3f46, 0x1e2226] as const;
 
-/** Small random HSL shift applied to every picked wall colour so repeated palette entries never look identical. */
+/** Small random HSL shift so repeated palette entries never look identical (houses and shared trim). */
 export const COLOR_RANDOMIZE = {
   HUE: 0.025,
   SATURATION: 0.08,
   LIGHTNESS: 0.035,
+} as const;
+
+/** Wider spread for street buildings so limestone, brick, and grey towers read as different blocks. */
+export const BUILDING_COLOR_RANDOMIZE = {
+  HUE: 0.055,
+  SATURATION: 0.12,
+  LIGHTNESS: 0.06,
 } as const;
