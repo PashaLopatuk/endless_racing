@@ -8,11 +8,11 @@ import {
 import { getLaneCenterX } from "../util/lane";
 import {
   createMeshBatch,
-  type BatchedModel,
-  type MeshBatch,
+  type IBatchedModel,
+  type IMeshBatch,
 } from "./meshBatch";
 
-const addLaneDashes = (batch: MeshBatch) => {
+const addLaneDashes = (batch: IMeshBatch) => {
   const length = STREET.ROAD_SEGMENT_LENGTH;
   const dashCount = Math.floor(length / ROAD.DASH_STRIDE);
   const firstZ = -length / 2 + ROAD.DASH_STRIDE * ROAD.DASH_PHASE;
@@ -31,7 +31,7 @@ const addLaneDashes = (batch: MeshBatch) => {
 };
 
 /** One road tile: asphalt, sidewalks, edge lines and lane dashes merged into a single mesh. */
-export const createRoadSegment = (): BatchedModel => {
+export const createRoadSegment = (): IBatchedModel => {
   const length = STREET.ROAD_SEGMENT_LENGTH;
   const batch = createMeshBatch();
 
@@ -58,6 +58,8 @@ export const createRoadSegment = (): BatchedModel => {
       color: ROAD.EDGE_COLOR,
     });
   }
+
   addLaneDashes(batch);
+
   return batch.build();
 };

@@ -8,12 +8,12 @@ export type Vec3Tuple = readonly [number, number, number];
 export type Range = readonly [number, number];
 export type Rng = () => number;
 
-export interface BodyUserData {
+export interface IBodyUserData {
   kind: BodyKind;
   id: number;
 }
 
-export interface GameHudState {
+export interface IGameHudState {
   speedKmh: number;
   health: number;
   maxHealth: number;
@@ -21,13 +21,13 @@ export interface GameHudState {
   isPaused: boolean;
 }
 
-export interface GameCallbacks {
+export interface IGameCallbacks {
   onReady(): void;
-  onTick(state: GameHudState): void;
+  onTick(state: IGameHudState): void;
   onError(error: unknown): void;
 }
 
-export interface GameController {
+export interface IGameController {
   dispose(): void;
   restart(): void;
   setPaused(isPaused: boolean): void;

@@ -2,7 +2,7 @@ import { PLAYER } from "../constants/player";
 import { CAR_SIZE, DRIVABLE_X } from "../constants/world";
 import { clamp } from "./math";
 
-export interface CarPose {
+export interface ICarPose {
   x: number;
   z: number;
   yaw: number;
@@ -35,11 +35,13 @@ export const steerYaw = (frontX: number, rearX: number): number => {
 export const frontPivotPose = (
   frontX: number,
   rearX: number,
-  out: CarPose,
-): CarPose => {
+  out: ICarPose,
+): ICarPose => {
   const yaw = steerYaw(frontX, rearX);
+
   out.yaw = yaw;
   out.x = frontX - Math.sin(yaw) * CAR_SIZE.HALF_LENGTH;
   out.z = CAR_SIZE.HALF_LENGTH * (1 - Math.cos(yaw));
+
   return out;
 };

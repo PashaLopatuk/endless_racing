@@ -6,24 +6,24 @@ import { IMPACT_DAMAGE, IMPACT_SPEED_LOSS } from "./constants/collision";
 import { BODY_KIND } from "./constants/kinds";
 import { PLAYER, PLAYER_VEHICLE_KIND } from "./constants/player";
 import { CAR_SIZE, CAR_Y, DRIVABLE_X } from "./constants/world";
-import type { DriveGesture } from "./input";
+import type { IDriveGesture } from "./input";
 import type { ImpactKind } from "./types";
 import {
   frontPivotPose,
   resolveSpeedTarget,
   resolveSteerTarget,
-  type CarPose,
+  type ICarPose,
 } from "./util/drive";
 import { getLaneCenterX } from "./util/lane";
 import { approach, clamp } from "./util/math";
 
-export interface Player {
+export interface IPlayer {
   readonly body: RAPIER.RigidBody;
   readonly x: number;
   readonly speed: number;
   readonly health: number;
   readonly isWrecked: boolean;
-  update(gesture: DriveGesture, dt: number, isGameOver: boolean): void;
+  update(gesture: IDriveGesture, dt: number, isGameOver: boolean): void;
   /** Hands the pose computed in `update` to Rapier for the next physics step. */
   commitPose(): void;
   syncMesh(): void;
@@ -34,7 +34,7 @@ export interface Player {
   dispose(): void;
 }
 
-interface PlayerState {
+interface IPlayerState {
   frontX: number;
   rearX: number;
   speed: number;
@@ -48,7 +48,7 @@ interface PlayerState {
 
 const START_X = getLaneCenterX(PLAYER.START_LANE);
 
-const createInitialState = (): PlayerState => ({
+const createInitialState = (): IPlayerState => ({
   frontX: START_X,
   rearX: START_X,
   speed: PLAYER.BASE_SPEED,
@@ -89,7 +89,7 @@ const createPlayerBody = (world: RAPIER.World): RAPIER.RigidBody => {
 export const createPlayer = (
   world: RAPIER.World,
   scene: THREE.Scene,
-): Player => {
+): IPlayer => {
   const model = createVehicleModel({
     kind: PLAYER_VEHICLE_KIND,
     paint: PLAYER.COLOR,
@@ -101,7 +101,7 @@ export const createPlayer = (
 
   const body = createPlayerBody(world);
   const state = createInitialState();
-  const pose: CarPose = { x: START_X, z: 0, yaw: 0 };
+  const pose: ICarPose = { x: START_X, z: 0, yaw: 0 };
 
   let isFlashing = false;
 
@@ -129,7 +129,7 @@ export const createPlayer = (
     state.wasTouching = false;
   };
 
-  const steer = (gesture: DriveGesture, dt: number) => {
+  const steer = (gesture: IDriveGesture, dt: number) => {
     if (gesture.isActive && !state.wasTouching) {
       state.anchorX = state.frontX;
       state.anchorSpeed = state.speed;

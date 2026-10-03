@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import * as RAPIER from "@dimforge/rapier3d-compat";
 
-import { createVehicleModel, type VehicleModel } from "./assets/vehicles";
+import { createVehicleModel, type IVehicleModel } from "./assets/vehicles";
 import { BODY_KIND } from "./constants/kinds";
 import {
   INITIAL_TRAFFIC,
@@ -9,7 +9,7 @@ import {
   NPC_PAINT_PALETTE,
   PARKING_ZONE,
   TRAFFIC,
-  type TrafficSeed,
+  type ITrafficSeed,
 } from "./constants/traffic";
 import { VEHICLE_KINDS } from "./constants/vehicles";
 import { CAR_SIZE, CAR_Y, LANE } from "./constants/world";
@@ -17,33 +17,33 @@ import { getLaneCenterX } from "./util/lane";
 import { randomRange } from "./util/math";
 import { pick } from "./util/random";
 
-export interface NpcCar {
+export interface INpcCar {
   readonly id: number;
   readonly body: RAPIER.RigidBody;
   readonly cruiseSpeed: number;
   readonly isActive: boolean;
 }
 
-export interface Traffic {
+export interface ITraffic {
   update(playerSpeed: number, dt: number, allowSpawn: boolean): void;
   /** Copies physics positions onto the meshes of active cars. */
   sync(): void;
-  findById(id: number): NpcCar | undefined;
+  findById(id: number): INpcCar | undefined;
   reset(): void;
   dispose(): void;
 }
 
 /** A pooled car: built once at startup, parked out of bounds, and moved onto the road when needed. */
-interface NpcSlot {
+interface INpcSlot {
   readonly id: number;
   readonly body: RAPIER.RigidBody;
-  readonly model: VehicleModel;
+  readonly model: IVehicleModel;
   lane: number;
   cruiseSpeed: number;
   isActive: boolean;
 }
 
-interface NpcPlacement extends TrafficSeed {
+interface INpcPlacement extends ITrafficSeed {
   paint: number;
   lampBrightness: number;
 }
@@ -92,7 +92,7 @@ const createNpcSlot = (
   world: RAPIER.World,
   scene: THREE.Scene,
   index: number,
-): NpcSlot => {
+): INpcSlot => {
   const id = TRAFFIC.FIRST_ID + index;
 
   const model = createVehicleModel({
@@ -118,8 +118,8 @@ const createNpcSlot = (
 };
 
 const activateSlot = (
-  slot: NpcSlot,
-  { lane, z, cruiseSpeed, paint, lampBrightness }: NpcPlacement,
+  slot: INpcSlot,
+  { lane, z, cruiseSpeed, paint, lampBrightness }: INpcPlacement,
 ) => {
   slot.lane = lane;
   slot.cruiseSpeed = cruiseSpeed;
@@ -131,7 +131,7 @@ const activateSlot = (
   slot.body.setLinvel(ZERO_VELOCITY, true);
 };
 
-const parkSlot = (slot: NpcSlot) => {
+const parkSlot = (slot: INpcSlot) => {
   const spot = parkingSpot(slot.id);
 
   slot.isActive = false;
@@ -141,7 +141,7 @@ const parkSlot = (slot: NpcSlot) => {
   slot.model.object.position.set(spot.x, spot.y, spot.z);
 };
 
-const cruise = (slot: NpcSlot, playerSpeed: number) => {
+const cruise = (slot: INpcSlot, playerSpeed: number) => {
   const velocity = slot.body.linvel();
   const closing = Math.max(
     TRAFFIC.MIN_CLOSING_SPEED,
@@ -154,7 +154,7 @@ const cruise = (slot: NpcSlot, playerSpeed: number) => {
   );
 };
 
-const syncSlotMesh = (slot: NpcSlot) => {
+const syncSlotMesh = (slot: INpcSlot) => {
   const translation = slot.body.translation();
   slot.model.object.position.set(translation.x, translation.y, translation.z);
 };
@@ -162,12 +162,12 @@ const syncSlotMesh = (slot: NpcSlot) => {
 export const createTraffic = (
   world: RAPIER.World,
   scene: THREE.Scene,
-): Traffic => {
+): ITraffic => {
   const slots = Array.from({ length: TRAFFIC.POOL_SIZE }, (_, index) =>
     createNpcSlot(world, scene, index),
   );
   const slotsById = new Map(slots.map((slot) => [slot.id, slot]));
-  const parkedScratch: NpcSlot[] = [];
+  const parkedScratch: INpcSlot[] = [];
   const openLanesScratch: number[] = [];
   const bandLanes = new Array<boolean>(LANE.COUNT).fill(false);
   const blockedLanes = new Array<boolean>(LANE.COUNT).fill(false);
@@ -176,7 +176,7 @@ export const createTraffic = (
   let paintCursor = 0;
   let spawnTimer: number = TRAFFIC.INITIAL_SPAWN_DELAY;
 
-  const takeParkedSlot = (): NpcSlot | null => {
+  const takeParkedSlot = (): INpcSlot | null => {
     parkedScratch.length = 0;
     for (const slot of slots) {
       if (!slot.isActive) {
@@ -186,7 +186,7 @@ export const createTraffic = (
     return parkedScratch.length > 0 ? pick(Math.random, parkedScratch) : null;
   };
 
-  const spawn = (seed: TrafficSeed) => {
+  const spawn = (seed: ITrafficSeed) => {
     const slot = takeParkedSlot();
     if (!slot) {
       return;
@@ -208,7 +208,7 @@ export const createTraffic = (
     activeCount += 1;
   };
 
-  const despawn = (slot: NpcSlot) => {
+  const despawn = (slot: INpcSlot) => {
     parkSlot(slot);
     activeCount -= 1;
   };

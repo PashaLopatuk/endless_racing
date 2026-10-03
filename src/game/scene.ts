@@ -6,7 +6,7 @@ import { PLAYER } from "./constants/player";
 import { HALF_PI } from "./constants/world";
 import { approach, clamp } from "./util/math";
 
-export interface GameScene {
+export interface IGameScene {
   readonly scene: THREE.Scene;
   follow(playerX: number, speed: number, dt: number): void;
   render(): void;
@@ -65,7 +65,7 @@ const getSpeedRatio = (speed: number): number => {
   );
 };
 
-export const createGameScene = (container: HTMLElement): GameScene => {
+export const createGameScene = (container: HTMLElement): IGameScene => {
   const scene = new THREE.Scene();
 
   scene.background = new THREE.Color(SCENE_LIGHTING.SKY_COLOR);

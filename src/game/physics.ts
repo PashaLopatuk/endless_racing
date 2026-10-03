@@ -2,9 +2,9 @@ import * as RAPIER from "@dimforge/rapier3d-compat";
 
 import { BODY_KIND } from "./constants/kinds";
 import { SIMULATION } from "./constants/simulation";
-import type { BodyUserData } from "./types";
+import type { IBodyUserData } from "./types";
 
-export interface ContactEvent {
+export interface IContactEvent {
   bodyA: RAPIER.RigidBody;
   bodyB: RAPIER.RigidBody;
   normalX: number;
@@ -12,14 +12,14 @@ export interface ContactEvent {
   normalZ: number;
 }
 
-export interface PhysicsWorld {
+export interface IPhysicsWorld {
   readonly world: RAPIER.World;
   /** Advances one fixed step. The returned array is reused; consume it before the next step. */
-  step(): readonly ContactEvent[];
+  step(): readonly IContactEvent[];
   dispose(): void;
 }
 
-interface ContactNormal {
+interface IContactNormal {
   x: number;
   y: number;
   z: number;
@@ -27,8 +27,8 @@ interface ContactNormal {
 
 const KNOWN_BODY_KINDS = new Set(Object.values(BODY_KIND));
 
-export const readBodyData = (body: RAPIER.RigidBody): BodyUserData | null => {
-  const data = body.userData as Partial<BodyUserData> | undefined;
+export const readBodyData = (body: RAPIER.RigidBody): IBodyUserData | null => {
+  const data = body.userData as Partial<IBodyUserData> | undefined;
 
   if (
     !data ||
@@ -38,15 +38,15 @@ export const readBodyData = (body: RAPIER.RigidBody): BodyUserData | null => {
     return null;
   }
 
-  return data as BodyUserData;
+  return data as IBodyUserData;
 };
 
 const readContactNormal = (
   world: RAPIER.World,
   colliderA: RAPIER.Collider,
   colliderB: RAPIER.Collider,
-): ContactNormal | null => {
-  let normal: ContactNormal | null = null;
+): IContactNormal | null => {
+  let normal: IContactNormal | null = null;
 
   world.contactPair(colliderA, colliderB, (manifold) => {
     const manifoldNormal = manifold.normal();
@@ -61,7 +61,7 @@ const readContactNormal = (
   return normal;
 };
 
-export const createPhysics = async (): Promise<PhysicsWorld> => {
+export const createPhysics = async (): Promise<IPhysicsWorld> => {
   await RAPIER.init();
 
   const world = new RAPIER.World({ x: 0, y: SIMULATION.GRAVITY, z: 0 });
@@ -69,9 +69,9 @@ export const createPhysics = async (): Promise<PhysicsWorld> => {
   world.timestep = SIMULATION.FIXED_TIMESTEP;
 
   const eventQueue = new RAPIER.EventQueue(true);
-  const contacts: ContactEvent[] = [];
+  const contacts: IContactEvent[] = [];
 
-  const step = (): readonly ContactEvent[] => {
+  const step = (): readonly IContactEvent[] => {
     world.step(eventQueue);
     contacts.length = 0;
 

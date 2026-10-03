@@ -22,23 +22,23 @@ export const VEHICLE_PART_ROLE = {
 
 export type VehiclePartRole = ValueOf<typeof VEHICLE_PART_ROLE>;
 
-export interface RoundedShape {
+export interface IRoundedShape {
   size: Vec3Tuple;
   radius: number;
 }
 
-export interface VehiclePart extends RoundedShape {
+export interface IVehiclePart extends IRoundedShape {
   role: VehiclePartRole;
   position: Vec3Tuple;
 }
 
-export interface WheelLayout {
+export interface IWheelLayout {
   frontZ: number;
   rearZ: number;
   halfTrack: number;
 }
 
-export interface LampLayout {
+export interface ILampLayout {
   tailY: number;
   tailZ: number;
   headY: number;
@@ -46,15 +46,15 @@ export interface LampLayout {
   halfSpan: number;
 }
 
-export interface VehicleBlueprint {
-  parts: readonly VehiclePart[];
-  wheels: WheelLayout;
-  lamps: LampLayout;
+export interface IVehicleBlueprint {
+  parts: readonly IVehiclePart[];
+  wheels: IWheelLayout;
+  lamps: ILampLayout;
   /** When set, the body keeps this paint and ignores repaint requests (taxis stay yellow). */
   fixedPaint?: number;
 }
 
-const SEDAN_PARTS: readonly VehiclePart[] = [
+const SEDAN_PARTS: readonly IVehiclePart[] = [
   {
     role: VEHICLE_PART_ROLE.PAINT,
     size: [1.68, 0.46, 3.2],
@@ -69,12 +69,12 @@ const SEDAN_PARTS: readonly VehiclePart[] = [
   },
 ];
 
-const SEDAN_WHEELS: WheelLayout = {
+const SEDAN_WHEELS: IWheelLayout = {
   frontZ: 1.02,
   rearZ: -1.02,
   halfTrack: 0.74,
 };
-const SEDAN_LAMPS: LampLayout = {
+const SEDAN_LAMPS: ILampLayout = {
   tailY: 0.08,
   tailZ: -1.58,
   headY: 0.06,
@@ -83,7 +83,7 @@ const SEDAN_LAMPS: LampLayout = {
 };
 
 export const VEHICLE_BLUEPRINTS: Readonly<
-  Record<VehicleKind, VehicleBlueprint>
+  Record<VehicleKind, IVehicleBlueprint>
 > = {
   [VEHICLE_KIND.SEDAN]: {
     parts: SEDAN_PARTS,
@@ -184,11 +184,11 @@ export const VEHICLE_BLUEPRINTS: Readonly<
   },
 };
 
-export const TAIL_LAMP_SHAPE: RoundedShape = {
+export const TAIL_LAMP_SHAPE: IRoundedShape = {
   size: [0.24, 0.14, 0.08],
   radius: 0.03,
 };
-export const HEAD_LAMP_SHAPE: RoundedShape = {
+export const HEAD_LAMP_SHAPE: IRoundedShape = {
   size: [0.32, 0.16, 0.1],
   radius: 0.04,
 };

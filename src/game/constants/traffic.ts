@@ -42,13 +42,13 @@ export const NPC_PAINT_PALETTE = [
   0x6a6a70, 0x1e1e22, 0x5c5048,
 ] as const;
 
-export interface TrafficSeed {
+export interface ITrafficSeed {
   lane: number;
   z: number;
   cruiseSpeed: number;
 }
 
-export const INITIAL_TRAFFIC: readonly TrafficSeed[] = [
+export const INITIAL_TRAFFIC: readonly ITrafficSeed[] = [
   { lane: 0, z: 32, cruiseSpeed: 7 },
   { lane: 2, z: 50, cruiseSpeed: 9 },
   { lane: 3, z: 68, cruiseSpeed: 8 },

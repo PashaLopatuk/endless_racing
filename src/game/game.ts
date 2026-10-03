@@ -1,19 +1,19 @@
 import { GAME_LOG } from "./constants/simulation";
 import { startLoop } from "./loop";
-import { createPhysics, type PhysicsWorld } from "./physics";
-import { createGameSession, type GameSession } from "./session";
-import type { GameCallbacks, GameController } from "./types";
+import { createPhysics, type IPhysicsWorld } from "./physics";
+import { createGameSession, type IGameSession } from "./session";
+import type { IGameCallbacks, IGameController } from "./types";
 
 /**
- * Composition root. Boots Rapier asynchronously, then runs a `GameSession` on the animation loop.
+ * Composition root. Boots Rapier asynchronously, then runs a `IGameSession` on the animation loop.
  * Safe to dispose at any point, including before the physics engine has finished loading.
  */
 export const createGame = (
   container: HTMLElement,
-  callbacks: GameCallbacks,
-): GameController => {
+  callbacks: IGameCallbacks,
+): IGameController => {
   let isDisposed = false;
-  let session: GameSession | null = null;
+  let session: IGameSession | null = null;
   let stopLoop: (() => void) | null = null;
 
   const onResize = () => {
@@ -40,7 +40,7 @@ export const createGame = (
     callbacks.onError(error);
   };
 
-  const startSession = (physics: PhysicsWorld) => {
+  const startSession = (physics: IPhysicsWorld) => {
     try {
       session = createGameSession({ container, physics, callbacks });
     } catch (error) {

@@ -9,7 +9,7 @@ const spillColor = new THREE.Color(FACADE_SHADE.SPILL_COLOR);
 const baseColor = new THREE.Color();
 const vertexColor = new THREE.Color();
 
-export interface BatchPart {
+export interface IBatchPart {
   color: number;
   position?: Vec3Tuple;
   /** Euler angles applied X, then Y, then Z, before translation. */
@@ -19,21 +19,21 @@ export interface BatchPart {
   isShaded?: boolean;
 }
 
-export interface BoxPart extends BatchPart {
+export interface IBoxPart extends IBatchPart {
   size: Vec3Tuple;
 }
 
-export interface GeometryPart extends BatchPart {
+export interface IGeometryPart extends IBatchPart {
   /** Ownership passes to the batch; it is disposed after merging. */
   geometry: THREE.BufferGeometry;
 }
 
-export interface BatchedModel {
+export interface IBatchedModel {
   readonly object: THREE.Group;
   dispose(): void;
 }
 
-export interface StreetModel extends BatchedModel {
+export interface IStreetModel extends IBatchedModel {
   /** Extent across the street (local X, the road-facing axis). */
   readonly width: number;
   /** Extent along the street (local Z). */
@@ -44,10 +44,10 @@ export interface StreetModel extends BatchedModel {
  * Collects many small vertex-coloured parts and merges them into one mesh per layer,
  * so a whole building costs at most two draw calls and two shared materials.
  */
-export interface MeshBatch {
-  addBox(part: BoxPart): void;
-  addGeometry(part: GeometryPart): void;
-  build(): BatchedModel;
+export interface IMeshBatch {
+  addBox(part: IBoxPart): void;
+  addGeometry(part: IGeometryPart): void;
+  build(): IBatchedModel;
 }
 
 const getLayerMaterial = (layer: BatchLayer): THREE.Material => {
@@ -109,10 +109,10 @@ const createLayerBuckets = (): Record<BatchLayer, THREE.BufferGeometry[]> => ({
   [BATCH_LAYER.GLOW]: [],
 });
 
-export const createMeshBatch = (): MeshBatch => {
+export const createMeshBatch = (): IMeshBatch => {
   let buckets = createLayerBuckets();
 
-  const addGeometry = ({ geometry, color, position, rotation, layer = BATCH_LAYER.SOLID, isShaded = false }: GeometryPart) => {
+  const addGeometry = ({ geometry, color, position, rotation, layer = BATCH_LAYER.SOLID, isShaded = false }: IGeometryPart) => {
     const prepared = toMergeable(geometry);
     if (isShaded) {
       paintShaded(prepared, color);
@@ -130,11 +130,11 @@ export const createMeshBatch = (): MeshBatch => {
     buckets[layer].push(prepared);
   };
 
-  const addBox = ({ size, ...part }: BoxPart) => {
+  const addBox = ({ size, ...part }: IBoxPart) => {
     addGeometry({ ...part, geometry: new THREE.BoxGeometry(size[0], size[1], size[2]) });
   };
 
-  const build = (): BatchedModel => {
+  const build = (): IBatchedModel => {
     const object = new THREE.Group();
     const merged: THREE.BufferGeometry[] = [];
 
@@ -163,6 +163,6 @@ export const createMeshBatch = (): MeshBatch => {
   return { addBox, addGeometry, build };
 };
 
-export const toStreetModel = (batch: MeshBatch, width: number, depth: number): StreetModel => {
+export const toStreetModel = (batch: IMeshBatch, width: number, depth: number): IStreetModel => {
   return { ...batch.build(), width, depth };
 };

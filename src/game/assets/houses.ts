@@ -39,14 +39,14 @@ import { addCornice, addDoor, addWall, pickWallColor } from "./facade";
 import {
   createMeshBatch,
   toStreetModel,
-  type MeshBatch,
-  type StreetModel,
+  type IMeshBatch,
+  type IStreetModel,
 } from "./meshBatch";
 import { addWindow } from "./windows";
 
 /** Colors rolled once per house and shared by every part builder. */
-interface HouseContext {
-  batch: MeshBatch;
+interface IHouseContext {
+  batch: IMeshBatch;
   random: Rng;
   wall: number;
   trim: number;
@@ -54,22 +54,22 @@ interface HouseContext {
   door: number;
 }
 
-interface HouseWindowSpec {
+interface IHouseWindowSpec {
   faceX: number;
   y: number;
   z: number;
 }
 
-interface GableRoofSpec {
+interface IGableRoofSpec {
   width: number;
   wallHeight: number;
   roofHeight: number;
   depth: number;
 }
 
-type HouseBuilder = (context: HouseContext) => StreetModel;
+type HouseBuilder = (context: IHouseContext) => IStreetModel;
 
-const createHouseContext = (random: Rng): HouseContext => ({
+const createHouseContext = (random: Rng): IHouseContext => ({
   batch: createMeshBatch(),
   random,
   wall: pickWallColor(random, HOUSE_PALETTE),
@@ -79,9 +79,9 @@ const createHouseContext = (random: Rng): HouseContext => ({
 });
 
 const addHouseWindow = (
-  context: HouseContext,
+  context: IHouseContext,
   kind: WindowKind,
-  { faceX, y, z }: HouseWindowSpec,
+  { faceX, y, z }: IHouseWindowSpec,
 ) => {
   addWindow(context.batch, {
     kind,
@@ -176,8 +176,8 @@ const buildBrownstone: HouseBuilder = (context) => {
 };
 
 const addGableRoof = (
-  context: HouseContext,
-  { width, wallHeight, roofHeight, depth }: GableRoofSpec,
+  context: IHouseContext,
+  { width, wallHeight, roofHeight, depth }: IGableRoofSpec,
 ) => {
   const half = width / 2;
   const slope = Math.atan2(roofHeight, half);
@@ -297,7 +297,7 @@ const buildTownhouse: HouseBuilder = (context) => {
   return toStreetModel(batch, width, depth);
 };
 
-const addPorch = (context: HouseContext, faceX: number, depth: number) => {
+const addPorch = (context: IHouseContext, faceX: number, depth: number) => {
   const porch = BUNGALOW.PORCH;
   const length = depth * porch.LENGTH_RATIO;
   const columnHeight = porch.ROOF_Y - porch.DECK_HEIGHT;
@@ -549,7 +549,7 @@ const BUILDERS: Readonly<Record<HouseStyle, HouseBuilder>> = {
 };
 
 /** Deterministic: the same seed always yields the same house. */
-export const createHouseModel = (seed: number): StreetModel => {
+export const createHouseModel = (seed: number): IStreetModel => {
   const random = createRng(seed);
 
   const { style } = pickWeighted(random, HOUSE_STYLE_WEIGHTS);

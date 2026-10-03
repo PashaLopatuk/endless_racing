@@ -1,6 +1,6 @@
 import { INPUT } from "./constants/input";
 
-export interface DriveGesture {
+export interface IDriveGesture {
   readonly isActive: boolean;
   /** Pixels dragged right since the touch started. */
   readonly deltaX: number;
@@ -8,13 +8,13 @@ export interface DriveGesture {
   readonly deltaY: number;
 }
 
-export interface TouchInput {
+export interface ITouchInput {
   /** Returns the same object every call; read it immediately rather than storing it. */
-  read(): DriveGesture;
+  read(): IDriveGesture;
   dispose(): void;
 }
 
-interface MutableGesture {
+interface IMutableGesture {
   isActive: boolean;
   deltaX: number;
   deltaY: number;
@@ -30,8 +30,8 @@ const isUiTarget = (target: EventTarget | null): boolean => {
   );
 };
 
-export const createTouchInput = (): TouchInput => {
-  const gesture: MutableGesture = { isActive: false, deltaX: 0, deltaY: 0 };
+export const createTouchInput = (): ITouchInput => {
+  const gesture: IMutableGesture = { isActive: false, deltaX: 0, deltaY: 0 };
   let activePointerId: number | null = null;
   let originX = 0;
   let originY = 0;
