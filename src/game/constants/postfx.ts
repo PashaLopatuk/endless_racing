@@ -21,23 +21,5 @@ export const MOTION_BLUR = {
    * Final `pow(rgb, OUTPUT_GAMMA)` after blur + vignette. **Above 1** darkens (crushes
    * mids/shadows); **below 1** lifts shadows (brighter). **1** = unchanged.
    */
-  OUTPUT_GAMMA: 1.00,
-} as const;
-
-/** Full-screen corner motion blur driven by player speed (0 = off at crawl, 1 = max speed). */
-
-export const SPEED_CORNER_BLUR = {
-  SMOOTH_RATE: 5.5,
-  /** Peak UV offset per blur sample at full speed (screen-space). */
-  MAX_OFFSET: 0.02,
-  /** Chebyshev distance from center where blur begins / reaches full strength. */
-  CORNER_INNER: 0.38,
-  CORNER_OUTER: 0.96,
-  /** Blend between forward (down-screen) smear and radial streak at corners. */
-  FORWARD_MIX: 0.25,
-  /**
-   * Same as `MOTION_BLUR.OUTPUT_GAMMA` (only used by legacy `cornerSpeedBlur` if re-enabled).
-   * Above 1 = darker; below 1 = lift shadows.
-   */
-  OUTPUT_GAMMA: 1.00,
+  OUTPUT_GAMMA: 1.28,
 } as const;

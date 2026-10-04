@@ -159,7 +159,7 @@ export const createGameScene = (container: HTMLElement): IGameScene => {
 
   const vignette = screenUV
     .distance(0.5)
-    .remap(0.5, 1)
+    .remap(0.6, 1)
     .mul(2)
     .clamp()
     .oneMinus();
