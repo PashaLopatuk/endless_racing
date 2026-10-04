@@ -143,6 +143,7 @@ const parkSlot = (slot: INpcSlot) => {
 
 const cruise = (slot: INpcSlot, playerSpeed: number) => {
   const velocity = slot.body.linvel();
+
   const closing = Math.max(
     TRAFFIC.MIN_CLOSING_SPEED,
     playerSpeed - slot.cruiseSpeed,
@@ -156,6 +157,7 @@ const cruise = (slot: INpcSlot, playerSpeed: number) => {
 
 const syncSlotMesh = (slot: INpcSlot) => {
   const translation = slot.body.translation();
+
   slot.model.object.position.set(translation.x, translation.y, translation.z);
 };
 

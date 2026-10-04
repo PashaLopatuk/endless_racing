@@ -1,12 +1,12 @@
 export const TRAFFIC = {
   FIRST_ID: 1,
-  POOL_SIZE: 30,
-  MAX_ACTIVE: 22,
+  POOL_SIZE: 36,
+  MAX_ACTIVE: 28,
 
   MIN_SPEED: 7,
   MAX_SPEED: 16,
   /** NPCs always drift toward the camera at least this fast, so stalled traffic still clears. */
-  MIN_CLOSING_SPEED: 0.5,
+  MIN_CLOSING_SPEED: 1,
   LATERAL_DAMPING: 0.986,
 
   SPAWN_Z: 150,
@@ -16,12 +16,12 @@ export const TRAFFIC = {
   SPAWN_BAND: 14,
   /** Lanes kept free across every spawn band so the road is never fully blocked. */
   MIN_FREE_LANES: 1,
-  SPAWN_INTERVAL_MIN: 0.75,
-  SPAWN_INTERVAL_MAX: 1.45,
-  INITIAL_SPAWN_DELAY: 1.2,
+  SPAWN_INTERVAL_MIN: 0.55,
+  SPAWN_INTERVAL_MAX: 1.25,
+  INITIAL_SPAWN_DELAY: 0.8,
 
-  LAMP_BRIGHTNESS_MIN: 0.18,
-  LAMP_BRIGHTNESS_MAX: 1.88,
+  LAMP_BRIGHTNESS_MIN: 0.58,
+  LAMP_BRIGHTNESS_MAX: 2.28,
 } as const;
 
 export const NPC_BODY = {
