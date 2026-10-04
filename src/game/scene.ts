@@ -11,10 +11,12 @@ import { motionBlur } from "three/addons/tsl/display/MotionBlur.js";
 
 import {
   float,
+  max,
   mix,
   pass,
   mrt,
   output,
+  pow,
   screenUV,
   velocity,
   uniform,
@@ -164,7 +166,11 @@ export const createGameScene = (container: HTMLElement): IGameScene => {
 
   const renderPipeline = new RenderPipeline(renderer);
 
-  renderPipeline.outputNode = vec4(mBlur.mul(vignette).rgb, mBlur.a);
+  const composed = mBlur.mul(vignette);
+  const outputGamma = float(MOTION_BLUR.OUTPUT_GAMMA);
+  const gradedRgb = pow(max(composed.rgb, float(0)), outputGamma);
+
+  renderPipeline.outputNode = vec4(gradedRgb, composed.a);
 
   return {
     scene,

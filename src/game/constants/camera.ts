@@ -35,7 +35,7 @@ export const GROUND = {
   LENGTH: 900,
   Y: -0.22,
   Z: 120,
-  COLOR: 0x0b0c10,
+  COLOR: 0x12151c,
 } as const;
 
 export const SKY = {

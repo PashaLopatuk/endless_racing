@@ -17,6 +17,11 @@ export const MOTION_BLUR = {
   /** Velocity scale on the far left/right (environment). */
   ENV_BLUR_SCALE: 2.6,
   SAMPLE_COUNT: 8,
+  /**
+   * Final `pow(rgb, OUTPUT_GAMMA)` after blur + vignette. **Above 1** darkens (crushes
+   * mids/shadows); **below 1** lifts shadows (brighter). **1** = unchanged.
+   */
+  OUTPUT_GAMMA: 1.00,
 } as const;
 
 /** Full-screen corner motion blur driven by player speed (0 = off at crawl, 1 = max speed). */
@@ -31,9 +36,8 @@ export const SPEED_CORNER_BLUR = {
   /** Blend between forward (down-screen) smear and radial streak at corners. */
   FORWARD_MIX: 0.25,
   /**
-   * Power curve applied before the canvas write. Below 1 lifts dark paint (cars, walls)
-   * more than headlights. A linear gain does the opposite: brights run away and shadows stay black.
-   * 1 leaves the pass unchanged.
+   * Same as `MOTION_BLUR.OUTPUT_GAMMA` (only used by legacy `cornerSpeedBlur` if re-enabled).
+   * Above 1 = darker; below 1 = lift shadows.
    */
-  OUTPUT_GAMMA: 0.28,
+  OUTPUT_GAMMA: 1.00,
 } as const;

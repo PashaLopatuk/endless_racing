@@ -44,7 +44,7 @@ import {
   pickBuildingWallColor,
 } from "./facade";
 import {
-  createMeshBatch,
+  createStreetMeshBatch,
   toStreetModel,
   type IMeshBatch,
   type IStreetModel,
@@ -112,7 +112,7 @@ const buildSlabTower: BuildingBuilder = (random) => {
   );
   const trim = pick(random, BUILDING_TRIM_PALETTE);
   const faceX = width / 2;
-  const batch = createMeshBatch();
+  const batch = createStreetMeshBatch();
 
   addWall(batch, {
     width,
@@ -165,7 +165,7 @@ const buildSetbackTower: BuildingBuilder = (random) => {
   const depth = randomIn(random, SETBACK_TOWER.DEPTH);
   const wall = pickBuildingWallColor(random, TOWER_PALETTE);
   const trim = pick(random, BUILDING_TRIM_PALETTE);
-  const batch = createMeshBatch();
+  const batch = createStreetMeshBatch();
 
   let baseY = 0;
 
@@ -258,7 +258,7 @@ const buildWarehouse: BuildingBuilder = (random) => {
   const height = randomIn(random, WAREHOUSE.HEIGHT);
   const trim = pick(random, BUILDING_TRIM_PALETTE);
   const faceX = width / 2;
-  const batch = createMeshBatch();
+  const batch = createStreetMeshBatch();
 
   addWall(batch, {
     width,
@@ -320,7 +320,7 @@ const buildOfficeTower: BuildingBuilder = (random) => {
   const height = randomIn(random, OFFICE_TOWER.HEIGHT);
   const metal = pick(random, METAL_PALETTE);
   const faceX = width / 2;
-  const batch = createMeshBatch();
+  const batch = createStreetMeshBatch();
 
   addWall(batch, {
     width,
@@ -467,7 +467,7 @@ const buildApartmentBlock: BuildingBuilder = (random) => {
     (height - APARTMENT_BLOCK.FIRST_FLOOR_Y) / APARTMENT_BLOCK.FLOOR_HEIGHT,
   );
   const span = depth * FACADE.SPAN_RATIO;
-  const batch = createMeshBatch();
+  const batch = createStreetMeshBatch();
 
   addWall(batch, {
     width,

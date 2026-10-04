@@ -16,6 +16,7 @@ import {
   type VehiclePartRole,
   type IWheelLayout,
 } from "../constants/vehicles";
+import { SCENE_BRIGHTNESS } from "../constants/sceneBrightness";
 import { HALF_PI, MIRRORED_SIDES } from "../constants/world";
 import type { Vec3Tuple } from "../types";
 import { createHeadlightCone } from "./headlightBeam";
@@ -63,9 +64,14 @@ const roundedBoxGeometry = ({
   );
 };
 
-const createPaintMaterial = (color: number): THREE.MeshStandardMaterial => {
+const createPaintMaterial = (
+  color: number,
+  emissiveIntensity: number,
+): THREE.MeshStandardMaterial => {
   return new THREE.MeshStandardMaterial({
     color,
+    emissive: color,
+    emissiveIntensity,
     roughness: VEHICLE_STYLE.PAINT.ROUGHNESS,
     metalness: VEHICLE_STYLE.PAINT.METALNESS,
   });
@@ -234,7 +240,13 @@ export const createVehicleModel = ({
 }: IVehicleModelOptions): IVehicleModel => {
   const blueprint = VEHICLE_BLUEPRINTS[kind];
   const object = new THREE.Group();
-  const paintMaterial = createPaintMaterial(blueprint.fixedPaint ?? paint);
+  const paintEmissive = hasSpotlights
+    ? SCENE_BRIGHTNESS.VEHICLE.PLAYER_PAINT_EMISSIVE
+    : SCENE_BRIGHTNESS.VEHICLE.NPC_PAINT_EMISSIVE;
+  const paintMaterial = createPaintMaterial(
+    blueprint.fixedPaint ?? paint,
+    paintEmissive,
+  );
 
   const lampMaterials: ILampMaterials = {
     tail: createLampMaterial(VEHICLE_STYLE.LAMP_COLOR.TAIL),
@@ -302,6 +314,7 @@ export const createVehicleModel = ({
     setPaint: (color) => {
       if (blueprint.fixedPaint === undefined) {
         paintMaterial.color.setHex(color);
+        paintMaterial.emissive.setHex(color);
       }
     },
     setLampBrightness,

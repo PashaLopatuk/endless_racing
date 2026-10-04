@@ -20,14 +20,29 @@ export const createGame = (
     session?.resize();
   };
 
+  /**
+   * Session teardown must not run synchronously from inside the rAF tick: Rapier WASM
+   * can still hold a world borrow when `frame()` throws, and `world.free()` then fails.
+   */
+  const disposeSessionAsync = (target: IGameSession | null) => {
+    if (!target) {
+      return;
+    }
+
+    queueMicrotask(() => {
+      target.dispose();
+    });
+  };
+
   const shutdown = () => {
     stopLoop?.();
     stopLoop = null;
 
     window.removeEventListener("resize", onResize);
 
-    session?.dispose();
+    const current = session;
     session = null;
+    disposeSessionAsync(current);
   };
 
   const fail = (message: string, error: unknown) => {
@@ -41,13 +56,22 @@ export const createGame = (
   };
 
   const startSession = async (physics: IPhysicsWorld) => {
+    let created: IGameSession;
+
     try {
-      session = await createGameSession({ container, physics, callbacks });
+      created = await createGameSession({ container, physics, callbacks });
     } catch (error) {
       physics.dispose();
 
       throw error;
     }
+
+    if (isDisposed) {
+      created.dispose();
+      return;
+    }
+
+    session = created;
 
     window.addEventListener("resize", onResize);
 

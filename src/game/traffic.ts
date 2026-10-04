@@ -248,7 +248,7 @@ export const createTraffic = (
       return;
     }
 
-    const z = TRAFFIC.SPAWN_Z + randomRange(0, TRAFFIC.SPAWN_Z_JITTER);
+    const z = TRAFFIC.SPAWN_Z + randomRange(0, TRAFFIC.SPAWN_Z_RANDOMIZE);
     const openLanes = collectOpenLanes(z);
 
     if (openLanes.length === 0) {

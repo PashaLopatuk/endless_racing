@@ -70,16 +70,30 @@ export const createPhysics = async (): Promise<IPhysicsWorld> => {
 
   const eventQueue = new RAPIER.EventQueue(true);
   const contacts: IContactEvent[] = [];
+  const startedPairs: { handleA: number; handleB: number }[] = [];
+  let isDisposed = false;
 
   const step = (): readonly IContactEvent[] => {
+    if (isDisposed) {
+      contacts.length = 0;
+      return contacts;
+    }
+
     world.step(eventQueue);
     contacts.length = 0;
+    startedPairs.length = 0;
 
     eventQueue.drainCollisionEvents((handleA, handleB, isStarted) => {
       if (!isStarted) {
         return;
       }
 
+      startedPairs.push({ handleA, handleB });
+    });
+
+    // `contactPair` must not run inside `drainCollisionEvents` — Rapier WASM rejects
+    // nested world access ("recursive use … unsafe aliasing").
+    for (const { handleA, handleB } of startedPairs) {
       const colliderA = world.getCollider(handleA);
       const colliderB = world.getCollider(handleB);
 
@@ -87,7 +101,7 @@ export const createPhysics = async (): Promise<IPhysicsWorld> => {
       const bodyB = colliderB.parent();
 
       if (!bodyA || !bodyB) {
-        return;
+        continue;
       }
 
       const normal = readContactNormal(world, colliderA, colliderB);
@@ -99,7 +113,7 @@ export const createPhysics = async (): Promise<IPhysicsWorld> => {
         normalY: normal?.y ?? 0,
         normalZ: normal?.z ?? 0,
       });
-    });
+    }
 
     return contacts;
   };
@@ -108,6 +122,11 @@ export const createPhysics = async (): Promise<IPhysicsWorld> => {
     world,
     step,
     dispose: () => {
+      if (isDisposed) {
+        return;
+      }
+
+      isDisposed = true;
       eventQueue.free();
       world.free();
     },
