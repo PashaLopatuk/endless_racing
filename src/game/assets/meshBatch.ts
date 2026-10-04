@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
 import { ASSET_KEY, BATCH_LAYER, BATCH_LAYERS, FACADE_SHADE, GEOMETRY_ATTRIBUTE, RGB_ITEM_SIZE, type BatchLayer } from "../constants/assets";
+import { SCENE_BRIGHTNESS } from "../constants/sceneBrightness";
 import type { Vec3Tuple } from "../types";
 import { sharedAssets } from "./sharedAssets";
 
@@ -75,17 +76,32 @@ const writeColor = (colors: Float32Array, index: number, color: THREE.Color) => 
   colors[offset + 2] = color.b;
 };
 
-const paintUniform = (geometry: THREE.BufferGeometry, hex: number) => {
+const scaleColor = (color: THREE.Color, vertexScale: number) => {
+  color.r *= vertexScale;
+  color.g *= vertexScale;
+  color.b *= vertexScale;
+};
+
+const paintUniform = (
+  geometry: THREE.BufferGeometry,
+  hex: number,
+  vertexScale: number,
+) => {
   const count = geometry.getAttribute(GEOMETRY_ATTRIBUTE.POSITION).count;
   const colors = new Float32Array(count * RGB_ITEM_SIZE);
   baseColor.setHex(hex);
+  scaleColor(baseColor, vertexScale);
   for (let index = 0; index < count; index += 1) {
     writeColor(colors, index, baseColor);
   }
   geometry.setAttribute(GEOMETRY_ATTRIBUTE.COLOR, new THREE.BufferAttribute(colors, RGB_ITEM_SIZE));
 };
 
-const paintShaded = (geometry: THREE.BufferGeometry, hex: number) => {
+const paintShaded = (
+  geometry: THREE.BufferGeometry,
+  hex: number,
+  vertexScale: number,
+) => {
   const position = geometry.getAttribute(GEOMETRY_ATTRIBUTE.POSITION);
   const colors = new Float32Array(position.count * RGB_ITEM_SIZE);
   geometry.computeBoundingBox();
@@ -93,6 +109,7 @@ const paintShaded = (geometry: THREE.BufferGeometry, hex: number) => {
   const spanX = Math.max(bounds.max.x - bounds.min.x, FACADE_SHADE.MIN_SPAN);
   const spanY = Math.max(bounds.max.y - bounds.min.y, FACADE_SHADE.MIN_SPAN);
   baseColor.setHex(hex);
+  scaleColor(baseColor, vertexScale);
 
   for (let index = 0; index < position.count; index += 1) {
     const towardRoad = (position.getX(index) - bounds.min.x) / spanX;
@@ -109,15 +126,23 @@ const createLayerBuckets = (): Record<BatchLayer, THREE.BufferGeometry[]> => ({
   [BATCH_LAYER.GLOW]: [],
 });
 
-export const createMeshBatch = (): IMeshBatch => {
+export interface IMeshBatchOptions {
+  /** Scales baked vertex RGB (e.g. darken street geometry). Default 1. */
+  vertexScale?: number;
+}
+
+export const createMeshBatch = (
+  options: IMeshBatchOptions = {},
+): IMeshBatch => {
+  const vertexScale = options.vertexScale ?? 1;
   let buckets = createLayerBuckets();
 
   const addGeometry = ({ geometry, color, position, rotation, layer = BATCH_LAYER.SOLID, isShaded = false }: IGeometryPart) => {
     const prepared = toMergeable(geometry);
     if (isShaded) {
-      paintShaded(prepared, color);
+      paintShaded(prepared, color, vertexScale);
     } else {
-      paintUniform(prepared, color);
+      paintUniform(prepared, color, vertexScale);
     }
     if (rotation) {
       prepared.rotateX(rotation[0]);
@@ -166,3 +191,7 @@ export const createMeshBatch = (): IMeshBatch => {
 export const toStreetModel = (batch: IMeshBatch, width: number, depth: number): IStreetModel => {
   return { ...batch.build(), width, depth };
 };
+
+/** Buildings and houses: darker facades than the road batch. */
+export const createStreetMeshBatch = (): IMeshBatch =>
+  createMeshBatch({ vertexScale: SCENE_BRIGHTNESS.BUILDING_VERTEX });

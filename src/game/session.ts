@@ -35,11 +35,11 @@ const IDLE_GESTURE: IDriveGesture = Object.freeze({
   deltaY: 0,
 });
 
-export const createGameSession = ({
+export const createGameSession = async ({
   container,
   physics,
   callbacks,
-}: IGameSessionOptions): IGameSession => {
+}: IGameSessionOptions): Promise<IGameSession> => {
   const view = createGameScene(container);
   const input = createTouchInput();
   const player = createPlayer(physics.world, view.scene);
@@ -47,7 +47,7 @@ export const createGameSession = ({
   const environment = createEnvironment(view.scene);
   const collisions = createCollisionSystem({ player, traffic });
 
-  view.warmUp();
+  await view.warmUp();
 
   let isPaused = false;
   let deltaTimeAccumulator = 0;

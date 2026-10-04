@@ -3,10 +3,21 @@ import * as THREE from "three";
 import { createBuildingModel } from "../assets/buildings";
 import { createHouseModel } from "../assets/houses";
 import type { IBatchedModel, IStreetModel } from "../assets/meshBatch";
+import { createCrosswalkModel } from "../assets/crosswalk";
 import { createRoadSegment } from "../assets/road";
+import { createStreetLightModel } from "../assets/streetLight";
+import { createOverheadTrafficLightModel } from "../assets/overheadTrafficLight";
+import { createRoadSignModel } from "../assets/roadSign";
+import { createTrashBinModel } from "../assets/trashBin";
 import { createTrafficLightModel } from "../assets/trafficLight";
-import { STREET, STREET_ROW } from "../constants/environment/street";
+import { OVERHEAD_TRAFFIC_LIGHT, STREET, STREET_ROW } from "../constants/environment/street";
 import { ROAD_HALF_WIDTH, STREET_SIDE, STREET_SIDES } from "../constants/world";
+import { buildCrosswalkZPositions } from "./crosswalkLayout";
+import { buildRoadSignPlacements } from "./roadSignLayout";
+import {
+  buildTrashBinPlacements,
+  TRASH_BIN_ZONE,
+} from "./trashBinLayout";
 
 export interface IEnvironment {
   scroll(distance: number): void;
@@ -56,12 +67,13 @@ export const createEnvironment = (scene: THREE.Scene): IEnvironment => {
     place(model.object, placement);
   };
 
+  const roadLoopSpan =
+    STREET.ROAD_SEGMENT_COUNT * STREET.ROAD_SEGMENT_LENGTH;
+
   const layRoad = () => {
     const template = createRoadSegment();
 
     owned.push(template);
-
-    const span = STREET.ROAD_SEGMENT_COUNT * STREET.ROAD_SEGMENT_LENGTH;
 
     for (let index = 0; index < STREET.ROAD_SEGMENT_COUNT; index += 1) {
       const object = index === 0 ? template.object : template.object.clone();
@@ -70,9 +82,77 @@ export const createEnvironment = (scene: THREE.Scene): IEnvironment => {
         x: 0,
         z: (index - STREET.ROAD_SEGMENTS_BEHIND) * STREET.ROAD_SEGMENT_LENGTH,
         rotationY: 0,
-        span,
+        span: roadLoopSpan,
       });
     }
+  };
+
+  const layCrosswalks = () => {
+    const template = createCrosswalkModel();
+
+    owned.push(template);
+
+    buildCrosswalkZPositions().forEach((z, index) => {
+      const object = index === 0 ? template.object : template.object.clone();
+
+      place(object, {
+        x: 0,
+        z,
+        rotationY: 0,
+        span: roadLoopSpan,
+      });
+    });
+  };
+
+  const layOverheadTrafficLights = () => {
+    buildCrosswalkZPositions().forEach((z, index) => {
+      const model = createOverheadTrafficLightModel(
+        index + OVERHEAD_TRAFFIC_LIGHT.SEED,
+      );
+
+      placeModel(model, {
+        x: 0,
+        z,
+        rotationY: 0,
+        span: roadLoopSpan,
+      });
+    });
+  };
+
+  const layRoadSigns = () => {
+    const { SIDEWALK_INSET } = STREET_ROW.ROAD_SIGNS;
+
+    buildRoadSignPlacements().forEach(({ z, side, seed }) => {
+      const model = createRoadSignModel(seed);
+
+      placeModel(model, {
+        x: side * (ROAD_HALF_WIDTH + SIDEWALK_INSET),
+        z,
+        rotationY: facingRoad(side),
+        span: roadLoopSpan,
+      });
+    });
+  };
+
+  const layTrashBins = () => {
+    const { SIDEWALK, BETWEEN_HOUSES } = STREET_ROW.TRASH_BINS;
+    const { HOUSES } = STREET_ROW;
+    const houseSpan = HOUSES.COUNT_PER_SIDE * HOUSES.SPACING;
+
+    buildTrashBinPlacements().forEach(({ z, side, seed, zone }) => {
+      const model = createTrashBinModel(seed);
+      const isSidewalk = zone === TRASH_BIN_ZONE.SIDEWALK;
+      const x = isSidewalk
+        ? side * (ROAD_HALF_WIDTH + SIDEWALK.INSET)
+        : side * (CURB_X + BETWEEN_HOUSES.ROW_INSET);
+
+      placeModel(model, {
+        x,
+        z,
+        rotationY: isSidewalk ? (Math.abs(seed) % 4) * (Math.PI / 2) : 0,
+        span: isSidewalk ? roadLoopSpan : houseSpan,
+      });
+    });
   };
 
   const lineRow = (count: number, createAt: (index: number) => IPlacedModel) => {
@@ -86,7 +166,7 @@ export const createEnvironment = (scene: THREE.Scene): IEnvironment => {
   const lineStreetSide = (side: number) => {
     const isRight = side === STREET_SIDE.RIGHT;
     const rotationY = facingRoad(side);
-    const { BUILDINGS, HOUSES, TRAFFIC_LIGHTS } = STREET_ROW;
+    const { BUILDINGS, HOUSES, TRAFFIC_LIGHTS, STREET_LIGHTS } = STREET_ROW;
 
     lineRow(BUILDINGS.COUNT_PER_SIDE, (index) => {
       const model = createBuildingModel(
@@ -144,9 +224,33 @@ export const createEnvironment = (scene: THREE.Scene): IEnvironment => {
         },
       };
     });
+
+    lineRow(STREET_LIGHTS.COUNT_PER_SIDE, (index) => {
+      const model = createStreetLightModel(
+        index +
+          (isRight ? STREET_LIGHTS.SEED_RIGHT : STREET_LIGHTS.SEED_LEFT),
+        -side,
+      );
+
+      const x = side * (ROAD_HALF_WIDTH + STREET_LIGHTS.SIDEWALK_INSET);
+
+      return {
+        model,
+        placement: {
+          x,
+          z: STREET_LIGHTS.START_Z + index * STREET_LIGHTS.SPACING,
+          rotationY: 0,
+          span: STREET_LIGHTS.COUNT_PER_SIDE * STREET_LIGHTS.SPACING,
+        },
+      };
+    });
   };
 
   layRoad();
+  layCrosswalks();
+  layOverheadTrafficLights();
+  layRoadSigns();
+  layTrashBins();
   STREET_SIDES.forEach(lineStreetSide);
 
   return {

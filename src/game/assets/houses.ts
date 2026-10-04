@@ -37,7 +37,7 @@ import {
 } from "../util/random";
 import { addCornice, addDoor, addWall, pickWallColor } from "./facade";
 import {
-  createMeshBatch,
+  createStreetMeshBatch,
   toStreetModel,
   type IMeshBatch,
   type IStreetModel,
@@ -70,7 +70,7 @@ interface IGableRoofSpec {
 type HouseBuilder = (context: IHouseContext) => IStreetModel;
 
 const createHouseContext = (random: Rng): IHouseContext => ({
-  batch: createMeshBatch(),
+  batch: createStreetMeshBatch(),
   random,
   wall: pickWallColor(random, HOUSE_PALETTE),
   trim: pick(random, TRIM_PALETTE),
