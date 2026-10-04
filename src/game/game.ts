@@ -40,9 +40,9 @@ export const createGame = (
     callbacks.onError(error);
   };
 
-  const startSession = (physics: IPhysicsWorld) => {
+  const startSession = async (physics: IPhysicsWorld) => {
     try {
-      session = createGameSession({ container, physics, callbacks });
+      session = await createGameSession({ container, physics, callbacks });
     } catch (error) {
       physics.dispose();
 
@@ -71,7 +71,7 @@ export const createGame = (
         return;
       }
 
-      startSession(physics);
+      await startSession(physics);
     } catch (error) {
       fail(GAME_LOG.BOOT_FAILED, error);
     }

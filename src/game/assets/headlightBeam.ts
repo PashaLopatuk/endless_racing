@@ -1,4 +1,16 @@
 import * as THREE from "three";
+import { MeshBasicNodeMaterial } from "three/webgpu";
+
+import {
+  abs,
+  dot,
+  normalize,
+  normalView,
+  positionView,
+  pow,
+  uniform,
+  vertexColor,
+} from "three/tsl";
 
 import {
   ASSET_KEY,
@@ -9,6 +21,8 @@ import { HEADLIGHT_CONE } from "../constants/vehicles";
 import { HALF_PI } from "../constants/world";
 import { clamp } from "../util/math";
 import { sharedAssets } from "./sharedAssets";
+
+const edgeSoftness = uniform(HEADLIGHT_CONE.EDGE_SOFTNESS);
 
 /**
  * Open cone with its apex at the origin, opening toward +Z and pitched slightly down.
@@ -60,41 +74,24 @@ const createConeGeometry = (): THREE.BufferGeometry => {
   return geometry;
 };
 
-const coneVertexShader = /* glsl */ `
-  varying vec3 vBeamColor;
-  varying float vFacing;
-
-  void main() {
-    vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
-    vec3 viewNormal = normalize(normalMatrix * normal);
-    vFacing = abs(dot(viewNormal, normalize(-viewPosition.xyz)));
-    vBeamColor = color;
-    gl_Position = projectionMatrix * viewPosition;
-  }
-`;
-
-const coneFragmentShader = /* glsl */ `
-  uniform float edgeSoftness;
-
-  varying vec3 vBeamColor;
-  varying float vFacing;
-
-  void main() {
-    gl_FragColor = vec4(vBeamColor * pow(vFacing, edgeSoftness), 1.0);
-  }
-`;
-
-const createConeMaterial = (): THREE.ShaderMaterial => {
-  return new THREE.ShaderMaterial({
-    vertexShader: coneVertexShader,
-    fragmentShader: coneFragmentShader,
-    uniforms: { edgeSoftness: { value: HEADLIGHT_CONE.EDGE_SOFTNESS } },
+const createConeMaterial = (): MeshBasicNodeMaterial => {
+  const facing = abs(
+    dot(
+      normalize(normalView),
+      normalize(positionView.negate()),
+    ),
+  );
+  const material = new MeshBasicNodeMaterial({
     vertexColors: true,
     transparent: true,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
     side: THREE.DoubleSide,
   });
+
+  material.colorNode = vertexColor().mul(pow(facing, edgeSoftness));
+
+  return material;
 };
 
 /** Cheap fake light beam. Geometry and material are shared by every cone in the scene. */

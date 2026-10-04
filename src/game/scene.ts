@@ -2,11 +2,25 @@ import * as THREE from "three";
 
 import { createStarSky } from "./assets/sky";
 import { CAMERA, GROUND, RENDERER, SCENE_LIGHTING } from "./constants/camera";
-import { SPEED_CORNER_BLUR } from "./constants/postfx";
+import { MOTION_BLUR } from "./constants/postfx";
 import { HALF_PI } from "./constants/world";
-import { createCornerSpeedBlurPass } from "./postfx/cornerSpeedBlur";
 import { getSpeedRatio } from "./util/drive";
 import { approach } from "./util/math";
+
+import { motionBlur } from "three/addons/tsl/display/MotionBlur.js";
+
+import {
+  float,
+  mix,
+  pass,
+  mrt,
+  output,
+  screenUV,
+  velocity,
+  uniform,
+  vec4,
+} from "three/tsl";
+import { RenderPipeline, WebGPURenderer } from "three/webgpu";
 
 export interface IGameScene {
   readonly scene: THREE.Scene;
@@ -14,7 +28,7 @@ export interface IGameScene {
   render(): void;
   resize(): void;
   /** Compiles every shader up front so the first spawn of each object type does not hitch. */
-  warmUp(): void;
+  warmUp(): Promise<void>;
   dispose(): void;
 }
 
@@ -91,7 +105,10 @@ export const createGameScene = (container: HTMLElement): IGameScene => {
   camera.position.set(0, CAMERA.HEIGHT, -CAMERA.BACK);
   camera.lookAt(0, CAMERA.LOOK_HEIGHT, CAMERA.LOOK_AHEAD);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+  const renderer = new WebGPURenderer({
+    antialias: true,
+    alpha: true,
+  });
 
   renderer.setPixelRatio(
     Math.min(window.devicePixelRatio, RENDERER.MAX_PIXEL_RATIO),
@@ -99,21 +116,69 @@ export const createGameScene = (container: HTMLElement): IGameScene => {
 
   renderer.setSize(width, height, false);
   renderer.domElement.className = RENDERER.CANVAS_CLASS;
+
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+
   container.appendChild(renderer.domElement);
 
-  const cornerBlur = createCornerSpeedBlurPass(renderer);
-  let smoothedBlurStrength = 0;
+  const blurAmount = uniform(0);
 
-  const drawingBufferSize = () => {
-    const size = new THREE.Vector2();
-    renderer.getDrawingBufferSize(size);
-    return size;
-  };
+  const scenePass = pass(scene, camera);
+
+  scenePass.setMRT(
+    mrt({
+      output,
+      velocity,
+    }),
+  );
+
+  const beauty = scenePass.getTextureNode().toInspector("Color");
+
+  const sideDistance = screenUV.x.sub(0.5).abs().mul(2);
+  const environmentMask = sideDistance
+    .remap(MOTION_BLUR.ROAD_EDGE_INNER, MOTION_BLUR.ROAD_EDGE_OUTER)
+    .clamp()
+    .pow(MOTION_BLUR.ENV_MASK_POWER);
+  const spatialBlurScale = mix(
+    float(MOTION_BLUR.ROAD_BLUR_SCALE),
+    float(MOTION_BLUR.ENV_BLUR_SCALE),
+    environmentMask,
+  );
+
+  const vel = scenePass
+    .getTextureNode("velocity")
+    .toInspector("Velocity")
+    .mul(blurAmount)
+    .mul(spatialBlurScale);
+
+  const mBlur = motionBlur(beauty, vel, vec4(MOTION_BLUR.SAMPLE_COUNT));
+
+  const vignette = screenUV
+    .distance(0.5)
+    .remap(0.5, 1)
+    .mul(2)
+    .clamp()
+    .oneMinus();
+
+  const renderPipeline = new RenderPipeline(renderer);
+
+  renderPipeline.outputNode = vec4(mBlur.mul(vignette).rgb, mBlur.a);
 
   return {
     scene,
     follow: (playerX, speed, dt) => {
       const speedRatio = getSpeedRatio(speed);
+
+      const targetBlur = speedRatio * MOTION_BLUR.MAX_AMOUNT;
+
+      blurAmount.value = approach(
+        blurAmount.value,
+        targetBlur,
+        MOTION_BLUR.SMOOTH_RATE,
+        dt,
+      );
 
       camera.position.x = approach(
         camera.position.x,
@@ -129,10 +194,15 @@ export const createGameScene = (container: HTMLElement): IGameScene => {
       const targetSpeedFov =
         CAMERA.FOV + (CAMERA.FOV_MAX - CAMERA.FOV) * speedRatio;
 
+      const fovResponse =
+        targetSpeedFov > camera.fov
+          ? CAMERA.FOV_INCREASE_RESPONSE
+          : CAMERA.FOV_DECREASE_RESPONSE;
+
       const interpolatedCurrentFrameFov = approach(
         camera.fov,
         targetSpeedFov,
-        CAMERA.FOV_RESPONSE,
+        fovResponse,
         dt,
       );
 
@@ -143,17 +213,9 @@ export const createGameScene = (container: HTMLElement): IGameScene => {
 
         camera.updateProjectionMatrix();
       }
-
-      smoothedBlurStrength = approach(
-        smoothedBlurStrength,
-        getSpeedRatio(speed),
-        SPEED_CORNER_BLUR.SMOOTH_RATE,
-        dt,
-      );
-      cornerBlur.setStrength(smoothedBlurStrength);
     },
     render: () => {
-      cornerBlur.render(renderer, scene, camera);
+      renderPipeline.render();
     },
     resize: () => {
       const newWindowSize = viewportSize(container);
@@ -162,16 +224,13 @@ export const createGameScene = (container: HTMLElement): IGameScene => {
       camera.updateProjectionMatrix();
 
       renderer.setSize(newWindowSize.width, newWindowSize.height, false);
-
-      const buffer = drawingBufferSize();
-      cornerBlur.resize(buffer.x, buffer.y);
     },
-    warmUp: () => {
-      renderer.compile(scene, camera);
-      cornerBlur.render(renderer, scene, camera);
+    warmUp: async () => {
+      await renderer.init();
+      await renderer.compileAsync(scene, camera);
+      renderPipeline.render();
     },
     dispose: () => {
-      cornerBlur.dispose();
       sky.dispose();
       ground.geometry.dispose();
       ground.material.dispose();
