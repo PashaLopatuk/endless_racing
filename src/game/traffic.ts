@@ -12,7 +12,7 @@ import {
   type ITrafficSeed,
 } from "./constants/traffic";
 import { VEHICLE_KINDS } from "./constants/vehicles";
-import { CAR_SIZE, CAR_Y, LANE } from "./constants/world";
+import { CAR_Y, LANE, VEHICLE_HITBOX } from "./constants/world";
 import { getLaneCenterX } from "./util/lane";
 import { randomRange } from "./util/math";
 import { pick } from "./util/random";
@@ -74,9 +74,9 @@ const createNpcBody = (world: RAPIER.World, id: number): RAPIER.RigidBody => {
 
   world.createCollider(
     RAPIER.ColliderDesc.cuboid(
-      CAR_SIZE.HALF_WIDTH,
-      CAR_SIZE.HALF_HEIGHT,
-      CAR_SIZE.HALF_LENGTH,
+      VEHICLE_HITBOX.HALF_WIDTH,
+      VEHICLE_HITBOX.HALF_HEIGHT,
+      VEHICLE_HITBOX.HALF_LENGTH,
     )
       .setDensity(NPC_BODY.DENSITY)
       .setFriction(NPC_BODY.FRICTION)
@@ -143,6 +143,7 @@ const parkSlot = (slot: INpcSlot) => {
 
 const cruise = (slot: INpcSlot, playerSpeed: number) => {
   const velocity = slot.body.linvel();
+
   const closing = Math.max(
     TRAFFIC.MIN_CLOSING_SPEED,
     playerSpeed - slot.cruiseSpeed,
@@ -156,6 +157,7 @@ const cruise = (slot: INpcSlot, playerSpeed: number) => {
 
 const syncSlotMesh = (slot: INpcSlot) => {
   const translation = slot.body.translation();
+
   slot.model.object.position.set(translation.x, translation.y, translation.z);
 };
 
