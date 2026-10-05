@@ -6,14 +6,14 @@ export const TRAFFIC = {
   MIN_SPEED: 7,
   MAX_SPEED: 16,
   /** NPCs always drift toward the camera at least this fast, so stalled traffic still clears. */
-  MIN_CLOSING_SPEED: 1,
+  MIN_CLOSING_SPEED: 0.5,
   LATERAL_DAMPING: 0.986,
 
   SPAWN_Z: 150,
   SPAWN_Z_RANDOMIZE: 22,
   DESPAWN_Z: -20,
-  MIN_LANE_GAP: 18,
-  SPAWN_BAND: 14,
+  MIN_LANE_GAP: 8,
+  SPAWN_BAND: 10,
   /** Lanes kept free across every spawn band so the road is never fully blocked. */
   MIN_FREE_LANES: 1,
   SPAWN_INTERVAL_MIN: 0.55,

@@ -10,6 +10,7 @@ import {
   VEHICLE_BLUEPRINTS,
   VEHICLE_PART_ROLE,
   VEHICLE_STYLE,
+  VEHICLES_SIZE_RATIO,
   type ILampLayout,
   type IRoundedShape,
   type VehicleKind,
@@ -307,6 +308,8 @@ export const createVehicleModel = ({
   };
 
   setLampBrightness(lampBrightness);
+
+  object.scale.setScalar(VEHICLES_SIZE_RATIO);
 
   return {
     object,

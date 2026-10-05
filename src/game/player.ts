@@ -5,7 +5,7 @@ import { createVehicleModel } from "./assets/vehicles";
 import { IMPACT_DAMAGE, IMPACT_SPEED_LOSS } from "./constants/collision";
 import { BODY_KIND } from "./constants/kinds";
 import { PLAYER, PLAYER_VEHICLE_KIND } from "./constants/player";
-import { CAR_SIZE, CAR_Y, DRIVABLE_X } from "./constants/world";
+import { CAR_Y, DRIVABLE_X, VEHICLE_HITBOX } from "./constants/world";
 import type { IDriveGesture } from "./input";
 import type { ImpactKind } from "./types";
 import {
@@ -73,9 +73,9 @@ const createPlayerBody = (world: RAPIER.World): RAPIER.RigidBody => {
 
   world.createCollider(
     RAPIER.ColliderDesc.cuboid(
-      CAR_SIZE.HALF_WIDTH,
-      CAR_SIZE.HALF_HEIGHT,
-      CAR_SIZE.HALF_LENGTH,
+      VEHICLE_HITBOX.HALF_WIDTH,
+      VEHICLE_HITBOX.HALF_HEIGHT,
+      VEHICLE_HITBOX.HALF_LENGTH,
     )
       .setFriction(PLAYER.FRICTION)
       .setRestitution(PLAYER.RESTITUTION)

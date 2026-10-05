@@ -1,5 +1,8 @@
 import type { ValueOf, Vec3Tuple } from "../types";
 
+/** Uniform scale for every vehicle built from `createVehicleModel`. */
+export const VEHICLES_SIZE_RATIO = 1.2;
+
 export const VEHICLE_KIND = {
   SEDAN: "sedan",
   HATCHBACK: "hatchback",

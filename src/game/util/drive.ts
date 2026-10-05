@@ -1,5 +1,5 @@
 import { PLAYER } from "../constants/player";
-import { CAR_SIZE, DRIVABLE_X } from "../constants/world";
+import { DRIVABLE_X, VEHICLE_HITBOX } from "../constants/world";
 import { clamp } from "./math";
 
 export interface ICarPose {
@@ -47,8 +47,8 @@ export const frontPivotPose = (
   const yaw = steerYaw(frontX, rearX);
 
   out.yaw = yaw;
-  out.x = frontX - Math.sin(yaw) * CAR_SIZE.HALF_LENGTH;
-  out.z = CAR_SIZE.HALF_LENGTH * (1 - Math.cos(yaw));
+  out.x = frontX - Math.sin(yaw) * VEHICLE_HITBOX.HALF_LENGTH;
+  out.z = VEHICLE_HITBOX.HALF_LENGTH * (1 - Math.cos(yaw));
 
   return out;
 };
