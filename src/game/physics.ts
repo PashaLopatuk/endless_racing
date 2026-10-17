@@ -1,7 +1,7 @@
 import * as RAPIER from "@dimforge/rapier3d-compat";
 
 import { BODY_KIND } from "./constants/kinds";
-import { SIMULATION } from "./constants/simulation";
+import { GAME_LOG, SIMULATION } from "./constants/simulation";
 import type { IBodyUserData } from "./types";
 
 export interface IContactEvent {
@@ -127,8 +127,20 @@ export const createPhysics = async (): Promise<IPhysicsWorld> => {
       }
 
       isDisposed = true;
-      eventQueue.free();
-      world.free();
+
+      const freeWorld = () => {
+        try {
+          eventQueue.free();
+          world.free();
+        } catch (error) {
+          console.error(`${GAME_LOG.PREFIX} Physics dispose failed`, error);
+        }
+      };
+
+      // Wait two frames so any Rapier borrow from a failed step can unwind first.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(freeWorld);
+      });
     },
   };
 };

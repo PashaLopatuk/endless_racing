@@ -21,5 +21,5 @@ export const MOTION_BLUR = {
    * Final `pow(rgb, OUTPUT_GAMMA)` after blur + vignette. **Above 1** darkens (crushes
    * mids/shadows); **below 1** lifts shadows (brighter). **1** = unchanged.
    */
-  OUTPUT_GAMMA: 1.28,
+  OUTPUT_GAMMA: 1.08,
 } as const;

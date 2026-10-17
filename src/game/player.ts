@@ -10,16 +10,19 @@ import type { IDriveGesture } from "./input";
 import type { ImpactKind } from "./types";
 import {
   frontPivotPose,
+  getSpeedRatio,
   resolveSpeedTarget,
   resolveSteerTarget,
   type ICarPose,
 } from "./util/drive";
 import { getLaneCenterX } from "./util/lane";
-import { approach, clamp } from "./util/math";
+import { smoothNumberValueExponentially, clamp } from "./util/math";
+import { NPC_BODY } from "./constants/traffic";
 
 export interface IPlayer {
   readonly body: RAPIER.RigidBody;
   readonly x: number;
+  readonly worldZ: number;
   readonly speed: number;
   readonly health: number;
   readonly isWrecked: boolean;
@@ -29,7 +32,7 @@ export interface IPlayer {
   syncMesh(): void;
   absorbImpact(kind: ImpactKind): void;
   /** Shifts the car sideways immediately (used to separate it from a car it scraped). */
-  nudge(offsetX: number): void;
+  shiftAfterHit(offsetX: number): void;
   reset(): void;
   dispose(): void;
 }
@@ -71,7 +74,7 @@ const createPlayerBody = (world: RAPIER.World): RAPIER.RigidBody => {
       .setUserData({ kind: BODY_KIND.PLAYER, id: PLAYER.ID }),
   );
 
-  world.createCollider(
+  const collider = world.createCollider(
     RAPIER.ColliderDesc.cuboid(
       VEHICLE_HITBOX.HALF_WIDTH,
       VEHICLE_HITBOX.HALF_HEIGHT,
@@ -82,6 +85,8 @@ const createPlayerBody = (world: RAPIER.World): RAPIER.RigidBody => {
       .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS),
     body,
   );
+
+  collider.setDensity(NPC_BODY.DENSITY);
 
   return body;
 };
@@ -106,7 +111,7 @@ export const createPlayer = (
   let isFlashing = false;
 
   const syncAxles = (dt: number) => {
-    const followed = approach(
+    const followed = smoothNumberValueExponentially(
       state.rearX,
       state.frontX,
       PLAYER.REAR_FOLLOW,
@@ -124,12 +129,29 @@ export const createPlayer = (
     frontPivotPose(state.frontX, state.rearX, pose);
   };
 
-  const coast = (dt: number) => {
-    state.speed = approach(state.speed, 0, PLAYER.GAME_OVER_DECEL, dt);
+  const processGameOverMovement = (dt: number) => {
+    state.speed = smoothNumberValueExponentially(
+      state.speed,
+      0,
+      PLAYER.GAME_OVER_DECEL,
+      dt,
+    );
+
     state.wasTouching = false;
   };
 
-  const steer = (gesture: IDriveGesture, dt: number) => {
+  // const processFastMovementSteerAffect = (dt: number) => {
+  //   const t = smoothNumberValueExp(
+  //     state.frontX,
+  //     state.speed,
+  //     PLAYER.STEER_RESPONSE,
+  //     dt,
+  //   );
+
+  //   state.frontX = clampToRoad(t);
+  // };
+
+  const processMovementChange = (gesture: IDriveGesture, dt: number) => {
     if (gesture.isActive && !state.wasTouching) {
       state.anchorX = state.frontX;
       state.anchorSpeed = state.speed;
@@ -146,13 +168,24 @@ export const createPlayer = (
       gesture.deltaX,
       state.speed,
     );
+
     const targetSpeed = resolveSpeedTarget(state.anchorSpeed, gesture.deltaY);
 
     state.frontX = clampToRoad(
-      approach(state.frontX, targetFront, PLAYER.STEER_RESPONSE, dt),
+      smoothNumberValueExponentially(
+        state.frontX,
+        targetFront,
+        PLAYER.STEER_RESPONSE,
+        dt,
+      ),
     );
 
-    state.speed = approach(state.speed, targetSpeed, PLAYER.SPEED_RESPONSE, dt);
+    state.speed = smoothNumberValueExponentially(
+      state.speed,
+      targetSpeed,
+      PLAYER.SPEED_RESPONSE,
+      dt,
+    );
   };
 
   const updateFlash = () => {
@@ -167,17 +200,25 @@ export const createPlayer = (
     model.setPaint(shouldFlash ? PLAYER.HIT_FLASH_COLOR : PLAYER.COLOR);
   };
 
+  const pushKinematicPose = () => {
+    body.setNextKinematicTranslation({
+      x: pose.x,
+      y: CAR_Y,
+      z: PLAYER.Z + pose.z,
+    });
+  };
+
   syncAxles(0);
-  body.setNextKinematicTranslation({
-    x: pose.x,
-    y: CAR_Y,
-    z: PLAYER.Z + pose.z,
-  });
+
+  pushKinematicPose();
 
   return {
     body,
     get x() {
       return pose.x;
+    },
+    get worldZ() {
+      return PLAYER.Z + pose.z;
     },
     get speed() {
       return state.speed;
@@ -192,54 +233,56 @@ export const createPlayer = (
       state.hitFlash = Math.max(0, state.hitFlash - dt);
 
       if (isGameOver) {
-        coast(dt);
+        processGameOverMovement(dt);
       } else {
-        steer(gesture, dt);
+        processMovementChange(gesture, dt);
       }
 
       syncAxles(dt);
     },
-    commitPose: () => {
-      body.setNextKinematicTranslation({
-        x: pose.x,
-        y: CAR_Y,
-        z: PLAYER.Z + pose.z,
-      });
-    },
+    commitPose: pushKinematicPose,
     syncMesh: () => {
-      const translation = body.translation();
-
-      model.object.position.set(translation.x, translation.y, translation.z);
+      model.object.position.set(pose.x, CAR_Y, PLAYER.Z + pose.z);
       model.object.rotation.y = pose.yaw;
 
       updateFlash();
     },
     absorbImpact: (kind) => {
-      const speedLoss = IMPACT_SPEED_LOSS[kind];
+      const speedLoss = Math.ceil(
+        IMPACT_SPEED_LOSS[kind] * getSpeedRatio(state.speed),
+      );
 
-      state.health = Math.max(0, state.health - IMPACT_DAMAGE[kind]);
+      const absorbedDamage = Math.ceil(
+        IMPACT_DAMAGE[kind] * getSpeedRatio(state.speed),
+      );
+
+      state.health = Math.max(0, state.health - absorbedDamage);
+
       state.speed = Math.max(PLAYER.MIN_SPEED, state.speed - speedLoss);
+
       state.anchorSpeed = Math.max(
         PLAYER.MIN_SPEED,
         state.anchorSpeed - speedLoss,
       );
+
       state.hitFlash = PLAYER.HIT_FLASH_SECONDS;
     },
-    nudge: (offsetX) => {
+    shiftAfterHit: (offsetX) => {
       const nextFront = clampToRoad(state.frontX + offsetX);
       const applied = nextFront - state.frontX;
+
       state.frontX = nextFront;
       state.rearX = clampToRoad(state.rearX + applied);
       state.anchorX += applied;
+
       syncAxles(0);
-      body.setTranslation({ x: pose.x, y: CAR_Y, z: PLAYER.Z + pose.z }, true);
     },
     reset: () => {
       Object.assign(state, createInitialState());
 
       syncAxles(0);
 
-      body.setTranslation({ x: pose.x, y: CAR_Y, z: PLAYER.Z + pose.z }, true);
+      pushKinematicPose();
 
       updateFlash();
     },

@@ -5,7 +5,7 @@ import { CAMERA, GROUND, RENDERER, SCENE_LIGHTING } from "./constants/camera";
 import { MOTION_BLUR } from "./constants/postfx";
 import { HALF_PI } from "./constants/world";
 import { getSpeedRatio } from "./util/drive";
-import { approach } from "./util/math";
+import { smoothNumberValueExponentially } from "./util/math";
 
 import { motionBlur } from "three/addons/tsl/display/MotionBlur.js";
 
@@ -179,14 +179,14 @@ export const createGameScene = (container: HTMLElement): IGameScene => {
 
       const targetBlur = speedRatio * MOTION_BLUR.MAX_AMOUNT;
 
-      blurAmount.value = approach(
+      blurAmount.value = smoothNumberValueExponentially(
         blurAmount.value,
         targetBlur,
         MOTION_BLUR.SMOOTH_RATE,
         dt,
       );
 
-      camera.position.x = approach(
+      camera.position.x = smoothNumberValueExponentially(
         camera.position.x,
         playerX *
           CAMERA.FOLLOW_X_RATIO *
@@ -205,7 +205,7 @@ export const createGameScene = (container: HTMLElement): IGameScene => {
           ? CAMERA.FOV_INCREASE_RESPONSE
           : CAMERA.FOV_DECREASE_RESPONSE;
 
-      const interpolatedCurrentFrameFov = approach(
+      const interpolatedCurrentFrameFov = smoothNumberValueExponentially(
         camera.fov,
         targetSpeedFov,
         fovResponse,

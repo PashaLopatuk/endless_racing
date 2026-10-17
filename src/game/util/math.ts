@@ -2,8 +2,7 @@ export const clamp = (value: number, min: number, max: number): number => {
   return Math.min(max, Math.max(min, value));
 };
 
-/** Frame-rate independent exponential smoothing toward `target`. */
-export const approach = (
+export const smoothNumberValueExponentially = (
   current: number,
   target: number,
   rate: number,

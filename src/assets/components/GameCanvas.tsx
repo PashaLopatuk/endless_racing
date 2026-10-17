@@ -46,12 +46,33 @@ export const GameCanvas = () => {
       return;
     }
 
+    let isEffectActive = true;
+
+    setHasFailed(false);
+    setIsLoading(true);
+    setHud(INITIAL_HUD);
+
     const game = createGame(container, {
       onReady: () => {
+        if (!isEffectActive) {
+          return;
+        }
+
+        setHasFailed(false);
         setIsLoading(false);
       },
-      onTick: setHud,
+      onTick: (nextHud) => {
+        if (!isEffectActive) {
+          return;
+        }
+
+        setHud(nextHud);
+      },
       onError: () => {
+        if (!isEffectActive) {
+          return;
+        }
+
         setIsLoading(false);
         setHasFailed(true);
       },
@@ -59,6 +80,7 @@ export const GameCanvas = () => {
     gameRef.current = game;
 
     return () => {
+      isEffectActive = false;
       game.dispose();
       gameRef.current = null;
     };
