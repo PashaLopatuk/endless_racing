@@ -195,6 +195,13 @@ export const createGameScene = (container: HTMLElement): IGameScene => {
         dt,
       );
 
+      camera.position.z = smoothNumberValueExponentially(
+        camera.position.z,
+        -CAMERA.BACK + speedRatio * CAMERA.MAX_SPEED_DISTANCE,
+        1,
+        dt,
+      );
+
       camera.lookAt(camera.position.x, CAMERA.LOOK_HEIGHT, CAMERA.LOOK_AHEAD);
 
       const targetSpeedFov =
