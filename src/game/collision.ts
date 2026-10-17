@@ -58,9 +58,12 @@ const impactAxis = ({ normalX, normalZ, offsetX, offsetZ }: IImpactSample) => {
 
 export const classifyImpact = (sample: IImpactSample): ImpactKind => {
   const { axisX, axisZ } = impactAxis(sample);
+
   const absX = Math.abs(axisX);
   const absZ = Math.abs(axisZ);
+
   const isDiagonal = Math.abs(absX - absZ) < COLLISION.DIAGONAL_THRESHOLD;
+
   const isSide = isDiagonal
     ? sample.lateralSpeed > sample.closingSpeed
     : absX > absZ;
@@ -74,6 +77,7 @@ export const classifyImpact = (sample: IImpactSample): ImpactKind => {
 
 const separateFromPlayer = (
   player: IPlayer,
+  traffic: ITraffic,
   npc: INpcCar,
   kind: ImpactKind,
   offset: { x: number; z: number },
@@ -81,11 +85,14 @@ const separateFromPlayer = (
   const pushSign = pushSignFor(offset.x);
 
   if (kind === IMPACT_KIND.SIDE) {
-    player.nudge(-pushSign * COLLISION.SIDE_SEPARATION);
-    npc.body.applyImpulse(
-      { x: pushSign * COLLISION.SIDE_PUSH_IMPULSE, y: 0, z: 0 },
-      true,
-    );
+    player.shiftAfterHit(-pushSign * COLLISION.SIDE_SEPARATION);
+
+    traffic.queueImpulse(npc.id, {
+      x: pushSign * COLLISION.SIDE_PUSH_IMPULSE,
+      y: 0,
+      z: 0,
+    });
+
     return;
   }
 
@@ -94,25 +101,29 @@ const separateFromPlayer = (
       ? COLLISION.BUMPER_PUSH_IMPULSE
       : -COLLISION.BUMPER_PUSH_IMPULSE;
 
-  npc.body.applyImpulse(
-    {
-      x:
-        pushSign *
-        COLLISION.SIDE_PUSH_IMPULSE *
-        COLLISION.BUMPER_SIDE_PUSH_RATIO,
-      y: 0,
-      z: bumperPush,
-    },
-    true,
-  );
+  traffic.queueImpulse(npc.id, {
+    x:
+      pushSign *
+      COLLISION.SIDE_PUSH_IMPULSE *
+      COLLISION.BUMPER_SIDE_PUSH_RATIO,
+    y: 0,
+    z: bumperPush,
+  });
 };
 
-const separateNpcs = (left: INpcCar, right: INpcCar) => {
-  const sign = right.body.translation().x >= left.body.translation().x ? 1 : -1;
+const separateNpcs = (left: INpcCar, right: INpcCar, traffic: ITraffic) => {
+  const leftPosition = traffic.getWorldPosition(left.id);
+  const rightPosition = traffic.getWorldPosition(right.id);
+
+  if (!leftPosition || !rightPosition) {
+    return;
+  }
+
+  const sign = rightPosition.x >= leftPosition.x ? 1 : -1;
   const impulse = COLLISION.SIDE_PUSH_IMPULSE * COLLISION.NPC_PUSH_RATIO;
 
-  right.body.applyImpulse({ x: sign * impulse, y: 0, z: 0 }, true);
-  left.body.applyImpulse({ x: -sign * impulse, y: 0, z: 0 }, true);
+  traffic.queueImpulse(right.id, { x: sign * impulse, y: 0, z: 0 });
+  traffic.queueImpulse(left.id, { x: -sign * impulse, y: 0, z: 0 });
 };
 
 const splitContact = (contact: IContactEvent): IContactPair | null => {
@@ -163,12 +174,15 @@ export const createCollisionSystem = ({
       return;
     }
 
-    const playerPosition = player.body.translation();
-    const npcPosition = npc.body.translation();
+    const npcPosition = traffic.getWorldPosition(npc.id);
+
+    if (!npcPosition) {
+      return;
+    }
 
     const offset = {
-      x: npcPosition.x - playerPosition.x,
-      z: npcPosition.z - playerPosition.z,
+      x: npcPosition.x - player.x,
+      z: npcPosition.z - player.worldZ,
     };
 
     const kind = classifyImpact({
@@ -176,13 +190,13 @@ export const createCollisionSystem = ({
       normalZ: contact.normalZ,
       offsetX: offset.x,
       offsetZ: offset.z,
-      lateralSpeed: Math.abs(player.body.linvel().x - npc.body.linvel().x),
+      lateralSpeed: 0,
       closingSpeed: Math.max(0, player.speed - npc.cruiseSpeed),
     });
 
     player.absorbImpact(kind);
 
-    separateFromPlayer(player, npc, kind, offset);
+    separateFromPlayer(player, traffic, npc, kind, offset);
   };
 
   return {
@@ -209,7 +223,7 @@ export const createCollisionSystem = ({
         const secondNpc = second && traffic.findById(second.id);
 
         if (secondNpc) {
-          separateNpcs(firstNpc, secondNpc);
+          separateNpcs(firstNpc, secondNpc, traffic);
         }
       }
     },

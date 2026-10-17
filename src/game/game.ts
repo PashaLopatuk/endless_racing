@@ -13,6 +13,7 @@ export const createGame = (
   callbacks: IGameCallbacks,
 ): IGameController => {
   let isDisposed = false;
+  let bootGeneration = 0;
   let session: IGameSession | null = null;
   let stopLoop: (() => void) | null = null;
 
@@ -29,7 +30,13 @@ export const createGame = (
       return;
     }
 
-    queueMicrotask(() => {
+    requestAnimationFrame(() => {
+      target.dispose();
+    });
+  };
+
+  const disposePhysicsAsync = (target: IPhysicsWorld) => {
+    requestAnimationFrame(() => {
       target.dispose();
     });
   };
@@ -55,18 +62,50 @@ export const createGame = (
     callbacks.onError(error);
   };
 
-  const startSession = async (physics: IPhysicsWorld) => {
+  const createActiveCallbacks = (generation: number): IGameCallbacks => ({
+    onReady: () => {
+      if (isDisposed || generation !== bootGeneration) {
+        return;
+      }
+
+      callbacks.onReady();
+    },
+    onTick: (hud) => {
+      if (isDisposed || generation !== bootGeneration) {
+        return;
+      }
+
+      callbacks.onTick(hud);
+    },
+    onError: (error) => {
+      if (isDisposed || generation !== bootGeneration) {
+        return;
+      }
+
+      callbacks.onError(error);
+    },
+  });
+
+  const startSession = async (
+    physics: IPhysicsWorld,
+    generation: number,
+    activeCallbacks: IGameCallbacks,
+  ) => {
     let created: IGameSession;
 
     try {
-      created = await createGameSession({ container, physics, callbacks });
+      created = await createGameSession({
+        container,
+        physics,
+        callbacks: activeCallbacks,
+      });
     } catch (error) {
-      physics.dispose();
+      disposePhysicsAsync(physics);
 
       throw error;
     }
 
-    if (isDisposed) {
+    if (isDisposed || generation !== bootGeneration) {
       created.dispose();
       return;
     }
@@ -76,6 +115,10 @@ export const createGame = (
     window.addEventListener("resize", onResize);
 
     stopLoop = startLoop((dt) => {
+      if (generation !== bootGeneration || isDisposed) {
+        return;
+      }
+
       try {
         session?.frame(dt);
       } catch (error) {
@@ -83,21 +126,26 @@ export const createGame = (
       }
     });
 
-    callbacks.onReady();
+    activeCallbacks.onReady();
   };
 
   const boot = async () => {
+    const generation = bootGeneration;
+    const activeCallbacks = createActiveCallbacks(generation);
+
     try {
       const physics = await createPhysics();
 
-      if (isDisposed) {
-        physics.dispose();
+      if (isDisposed || generation !== bootGeneration) {
+        disposePhysicsAsync(physics);
         return;
       }
 
-      await startSession(physics);
+      await startSession(physics, generation, activeCallbacks);
     } catch (error) {
-      fail(GAME_LOG.BOOT_FAILED, error);
+      if (generation === bootGeneration && !isDisposed) {
+        fail(GAME_LOG.BOOT_FAILED, error);
+      }
     }
   };
 
@@ -106,6 +154,7 @@ export const createGame = (
   return {
     dispose: () => {
       isDisposed = true;
+      bootGeneration += 1;
       shutdown();
     },
     restart: () => {

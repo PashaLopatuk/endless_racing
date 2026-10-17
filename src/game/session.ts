@@ -50,6 +50,7 @@ export const createGameSession = async ({
   await view.warmUp();
 
   let isPaused = false;
+  let isDisposed = false;
   let deltaTimeAccumulator = 0;
   let simulationTime = 0;
   let lastHud: IGameHudState | null = null;
@@ -58,13 +59,17 @@ export const createGameSession = async ({
     const isGameOver = player.isWrecked;
 
     player.update(isGameOver ? IDLE_GESTURE : input.read(), dt, isGameOver);
-    player.commitPose();
 
     traffic.update(player.speed, dt, !isGameOver);
 
     environment.scroll(player.speed * dt);
 
-    collisions.resolve(physics.step(), {
+    player.commitPose();
+    traffic.commitDynamics(player.speed);
+
+    const contacts = physics.step();
+
+    collisions.resolve(contacts, {
       simulationTime,
       isPlayerHittable: !isGameOver,
     });
@@ -114,6 +119,10 @@ export const createGameSession = async ({
 
   return {
     frame: (dt) => {
+      if (isDisposed) {
+        return;
+      }
+
       if (isPaused) {
         publishHud();
 
@@ -141,6 +150,12 @@ export const createGameSession = async ({
       view.resize();
     },
     dispose: () => {
+      if (isDisposed) {
+        return;
+      }
+
+      isDisposed = true;
+
       input.dispose();
       environment.dispose();
       traffic.dispose();

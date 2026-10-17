@@ -24,9 +24,23 @@ export interface INpcCar {
   readonly isActive: boolean;
 }
 
+export interface IWorldPosition {
+  x: number;
+  z: number;
+}
+
+export interface IImpulse {
+  x: number;
+  y: number;
+  z: number;
+}
+
 export interface ITraffic {
   update(playerSpeed: number, dt: number, allowSpawn: boolean): void;
-  /** Copies physics positions onto the meshes of active cars. */
+  getWorldPosition(id: number): IWorldPosition | undefined;
+  queueImpulse(id: number, impulse: IImpulse): void;
+  /** Pushes simulated NPC poses into Rapier for the upcoming step. */
+  commitDynamics(playerSpeed: number): void;
   sync(): void;
   findById(id: number): INpcCar | undefined;
   reset(): void;
@@ -40,6 +54,9 @@ interface INpcSlot {
   readonly model: IVehicleModel;
   lane: number;
   cruiseSpeed: number;
+  worldX: number;
+  worldZ: number;
+  lateralVelocity: number;
   isActive: boolean;
 }
 
@@ -48,9 +65,7 @@ interface INpcPlacement extends ITrafficSeed {
   lampBrightness: number;
 }
 
-const ZERO_VELOCITY: RAPIER.Vector = { x: 0, y: 0, z: 0 };
-
-const parkingSpot = (id: number): RAPIER.Vector => ({
+const parkingSpot = (id: number) => ({
   x: PARKING_ZONE.X,
   y: CAR_Y,
   z: PARKING_ZONE.Z - id * PARKING_ZONE.SPACING,
@@ -59,18 +74,14 @@ const parkingSpot = (id: number): RAPIER.Vector => ({
 const createNpcBody = (world: RAPIER.World, id: number): RAPIER.RigidBody => {
   const spot = parkingSpot(id);
 
-  const rigidBodyDescription = RAPIER.RigidBodyDesc.dynamic()
-    .setTranslation(spot.x, spot.y, spot.z)
-    .setGravityScale(0)
-    .enabledTranslations(true, false, true)
-    .lockRotations()
-    .setLinearDamping(0)
-    .setCanSleep(false)
-    .setCcdEnabled(true)
-    .setEnabled(false)
-    .setUserData({ kind: BODY_KIND.NPC, id });
-
-  const body = world.createRigidBody(rigidBodyDescription);
+  const body = world.createRigidBody(
+    RAPIER.RigidBodyDesc.kinematicPositionBased()
+      .setTranslation(spot.x, spot.y, spot.z)
+      .lockRotations()
+      .setCcdEnabled(true)
+      .setEnabled(false)
+      .setUserData({ kind: BODY_KIND.NPC, id }),
+  );
 
   world.createCollider(
     RAPIER.ColliderDesc.cuboid(
@@ -113,8 +124,19 @@ const createNpcSlot = (
     model,
     lane: 0,
     cruiseSpeed: TRAFFIC.MIN_SPEED,
+    worldX: spot.x,
+    worldZ: spot.z,
+    lateralVelocity: 0,
     isActive: false,
   };
+};
+
+const pushSlotPose = (slot: INpcSlot) => {
+  slot.body.setNextKinematicTranslation({
+    x: slot.worldX,
+    y: CAR_Y,
+    z: slot.worldZ,
+  });
 };
 
 const activateSlot = (
@@ -124,41 +146,25 @@ const activateSlot = (
   slot.lane = lane;
   slot.cruiseSpeed = cruiseSpeed;
   slot.isActive = true;
+  slot.lateralVelocity = 0;
   slot.model.setPaint(paint);
   slot.model.setLampBrightness(lampBrightness);
   slot.body.setEnabled(true);
-  slot.body.setTranslation({ x: getLaneCenterX(lane), y: CAR_Y, z }, true);
-  slot.body.setLinvel(ZERO_VELOCITY, true);
+  slot.worldX = getLaneCenterX(lane);
+  slot.worldZ = z;
+  slot.body.setTranslation({ x: slot.worldX, y: CAR_Y, z: slot.worldZ }, true);
 };
 
 const parkSlot = (slot: INpcSlot) => {
   const spot = parkingSpot(slot.id);
 
   slot.isActive = false;
-  slot.body.setLinvel(ZERO_VELOCITY, true);
-  slot.body.setTranslation(spot, true);
+  slot.lateralVelocity = 0;
   slot.body.setEnabled(false);
+  slot.worldX = spot.x;
+  slot.worldZ = spot.z;
+  slot.body.setTranslation({ x: spot.x, y: spot.y, z: spot.z }, true);
   slot.model.object.position.set(spot.x, spot.y, spot.z);
-};
-
-const cruise = (slot: INpcSlot, playerSpeed: number) => {
-  const velocity = slot.body.linvel();
-
-  const closing = Math.max(
-    TRAFFIC.MIN_CLOSING_SPEED,
-    playerSpeed - slot.cruiseSpeed,
-  );
-
-  slot.body.setLinvel(
-    { x: velocity.x * TRAFFIC.LATERAL_DAMPING, y: 0, z: -closing },
-    true,
-  );
-};
-
-const syncSlotMesh = (slot: INpcSlot) => {
-  const translation = slot.body.translation();
-
-  slot.model.object.position.set(translation.x, translation.y, translation.z);
 };
 
 export const createTraffic = (
@@ -173,6 +179,7 @@ export const createTraffic = (
   const openLanesScratch: number[] = [];
   const bandLanes = new Array<boolean>(LANE.COUNT).fill(false);
   const blockedLanes = new Array<boolean>(LANE.COUNT).fill(false);
+  const pendingImpulses = new Map<number, IImpulse>();
 
   let activeCount = 0;
   let paintCursor = 0;
@@ -215,6 +222,30 @@ export const createTraffic = (
     activeCount -= 1;
   };
 
+  const applyPendingImpulses = (slot: INpcSlot) => {
+    const impulse = pendingImpulses.get(slot.id);
+
+    if (!impulse) {
+      return;
+    }
+
+    slot.lateralVelocity += impulse.x;
+    slot.worldZ += impulse.z * 0.04;
+  };
+
+  const advanceSlot = (slot: INpcSlot, playerSpeed: number, dt: number) => {
+    applyPendingImpulses(slot);
+
+    const closing = Math.max(
+      TRAFFIC.MIN_CLOSING_SPEED,
+      playerSpeed - slot.cruiseSpeed,
+    );
+
+    slot.worldZ -= closing * dt;
+    slot.lateralVelocity *= TRAFFIC.LATERAL_DAMPING;
+    slot.worldX += slot.lateralVelocity * dt;
+  };
+
   /** Lanes where a car may appear at `z`, keeping at least `MIN_FREE_LANES` lanes clear across the band. */
   const collectOpenLanes = (z: number): readonly number[] => {
     bandLanes.fill(false);
@@ -225,7 +256,7 @@ export const createTraffic = (
       if (!slot.isActive) {
         continue;
       }
-      const distance = Math.abs(slot.body.translation().z - z);
+      const distance = Math.abs(slot.worldZ - z);
       bandLanes[slot.lane] ||= distance < TRAFFIC.SPAWN_BAND;
       blockedLanes[slot.lane] ||= distance < TRAFFIC.MIN_LANE_GAP;
     }
@@ -272,6 +303,16 @@ export const createTraffic = (
 
   seedInitial();
 
+  const mergeImpulse = (id: number, impulse: IImpulse) => {
+    const previous = pendingImpulses.get(id) ?? { x: 0, y: 0, z: 0 };
+
+    pendingImpulses.set(id, {
+      x: previous.x + impulse.x,
+      y: previous.y + impulse.y,
+      z: previous.z + impulse.z,
+    });
+  };
+
   return {
     update: (playerSpeed, dt, allowSpawn) => {
       for (const slot of slots) {
@@ -279,13 +320,16 @@ export const createTraffic = (
           continue;
         }
 
-        if (slot.body.translation().z < TRAFFIC.DESPAWN_Z) {
+        advanceSlot(slot, playerSpeed, dt);
+
+        if (slot.worldZ < TRAFFIC.DESPAWN_Z) {
           despawn(slot);
 
           continue;
         }
-        cruise(slot, playerSpeed);
       }
+
+      pendingImpulses.clear();
 
       if (!allowSpawn) {
         return;
@@ -304,11 +348,30 @@ export const createTraffic = (
         TRAFFIC.SPAWN_INTERVAL_MAX,
       );
     },
-    sync: () => {
+    getWorldPosition: (id) => {
+      const slot = slotsById.get(id);
+
+      if (!slot?.isActive) {
+        return undefined;
+      }
+
+      return { x: slot.worldX, z: slot.worldZ };
+    },
+    queueImpulse: mergeImpulse,
+    commitDynamics: (_playerSpeed) => {
       for (const slot of slots) {
         if (slot.isActive) {
-          syncSlotMesh(slot);
+          pushSlotPose(slot);
         }
+      }
+    },
+    sync: () => {
+      for (const slot of slots) {
+        if (!slot.isActive) {
+          continue;
+        }
+
+        slot.model.object.position.set(slot.worldX, CAR_Y, slot.worldZ);
       }
     },
     findById: (id) => slotsById.get(id),
