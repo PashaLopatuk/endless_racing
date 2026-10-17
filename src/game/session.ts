@@ -7,6 +7,7 @@ import { SIMULATION } from "./constants/simulation";
 import { UNITS } from "./constants/world";
 import { createTouchInput, type IDriveGesture } from "./input";
 import { createEnvironment } from "./level/environment";
+import type { ILevelConfig } from "./levels";
 import type { IPhysicsWorld } from "./physics";
 import { createPlayer } from "./player";
 import { createGameScene } from "./scene";
@@ -18,6 +19,7 @@ export interface IGameSessionOptions {
   /** Ownership passes to the session; it is freed in `dispose`. */
   physics: IPhysicsWorld;
   callbacks: IGameCallbacks;
+  level: ILevelConfig;
 }
 
 /** One running race: owns the scene, the actors, and the fixed-step simulation. */
@@ -39,12 +41,13 @@ export const createGameSession = async ({
   container,
   physics,
   callbacks,
+  level,
 }: IGameSessionOptions): Promise<IGameSession> => {
-  const view = createGameScene(container);
+  const view = createGameScene(container, level.outputGamma);
   const input = createTouchInput();
   const player = createPlayer(physics.world, view.scene);
-  const traffic = createTraffic(physics.world, view.scene);
-  const environment = createEnvironment(view.scene);
+  const traffic = createTraffic(physics.world, view.scene, level.cars);
+  const environment = createEnvironment(view.scene, level.buildings);
   const collisions = createCollisionSystem({ player, traffic });
 
   await view.warmUp();

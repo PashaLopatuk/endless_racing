@@ -4,7 +4,6 @@ import { BATCH_LAYER } from "../constants/assets";
 import {
   APARTMENT_BLOCK,
   BUILDING_STYLE,
-  BUILDING_STYLE_WEIGHTS,
   FACADE,
   OFFICE_TOWER,
   SETBACK_TOWER,
@@ -12,15 +11,8 @@ import {
   WAREHOUSE,
   type BuildingStyle,
 } from "../constants/environment/buildings";
-import {
-  APARTMENT_PALETTE,
-  METAL_PALETTE,
-  NEON_PALETTE,
-  OFFICE_PALETTE,
-  TOWER_PALETTE,
-  BUILDING_TRIM_PALETTE,
-  WAREHOUSE_PALETTE,
-} from "../constants/palette";
+import { METAL_PALETTE, NEON_PALETTE } from "../constants/palette";
+import type { IBuildingLevelConfig } from "../levels/types";
 import {
   GLOW_PROFILE,
   WINDOW_COLORS,
@@ -51,7 +43,16 @@ import {
 } from "./meshBatch";
 import { windowGlowColor } from "./windows";
 
-type BuildingBuilder = (random: Rng) => IStreetModel;
+type BuildingBuilder = (
+  random: Rng,
+  look: IBuildingLevelConfig,
+) => IStreetModel;
+
+const wallColor = (
+  random: Rng,
+  look: IBuildingLevelConfig,
+  palette: readonly number[],
+) => pickBuildingWallColor(random, palette, look.colorRandomize);
 
 interface ICorniceSize {
   OVERHANG: number;
@@ -98,7 +99,7 @@ const addFireEscape = (
   }
 };
 
-const buildSlabTower: BuildingBuilder = (random) => {
+const buildSlabTower: BuildingBuilder = (random, look) => {
   const width = randomIn(
     random,
     chance(random, SLAB_TOWER.NARROW_CHANCE)
@@ -110,7 +111,7 @@ const buildSlabTower: BuildingBuilder = (random) => {
     random,
     pickWeighted(random, SLAB_TOWER.HEIGHT_CLASSES).height,
   );
-  const trim = pick(random, BUILDING_TRIM_PALETTE);
+  const trim = pick(random, look.palettes.trim);
   const faceX = width / 2;
   const batch = createStreetMeshBatch();
 
@@ -118,7 +119,7 @@ const buildSlabTower: BuildingBuilder = (random) => {
     width,
     height,
     depth,
-    color: pickBuildingWallColor(random, TOWER_PALETTE),
+    color: wallColor(random, look, look.palettes.tower),
   });
 
   const roof = SLAB_TOWER.ROOF_BLOCK;
@@ -160,11 +161,11 @@ const buildSlabTower: BuildingBuilder = (random) => {
   return toStreetModel(batch, width, depth);
 };
 
-const buildSetbackTower: BuildingBuilder = (random) => {
+const buildSetbackTower: BuildingBuilder = (random, look) => {
   const width = randomIn(random, SETBACK_TOWER.WIDTH);
   const depth = randomIn(random, SETBACK_TOWER.DEPTH);
-  const wall = pickBuildingWallColor(random, TOWER_PALETTE);
-  const trim = pick(random, BUILDING_TRIM_PALETTE);
+  const wall = wallColor(random, look, look.palettes.tower);
+  const trim = pick(random, look.palettes.trim);
   const batch = createStreetMeshBatch();
 
   let baseY = 0;
@@ -252,11 +253,11 @@ const addRoofTank = (batch: IMeshBatch, width: number, height: number) => {
   }
 };
 
-const buildWarehouse: BuildingBuilder = (random) => {
+const buildWarehouse: BuildingBuilder = (random, look) => {
   const width = randomIn(random, WAREHOUSE.WIDTH);
   const depth = randomIn(random, WAREHOUSE.DEPTH);
   const height = randomIn(random, WAREHOUSE.HEIGHT);
-  const trim = pick(random, BUILDING_TRIM_PALETTE);
+  const trim = pick(random, look.palettes.trim);
   const faceX = width / 2;
   const batch = createStreetMeshBatch();
 
@@ -264,7 +265,7 @@ const buildWarehouse: BuildingBuilder = (random) => {
     width,
     height,
     depth,
-    color: pickBuildingWallColor(random, WAREHOUSE_PALETTE),
+    color: wallColor(random, look, look.palettes.warehouse),
   });
 
   addCornice(batch, {
@@ -314,7 +315,7 @@ const buildWarehouse: BuildingBuilder = (random) => {
   return toStreetModel(batch, width, depth);
 };
 
-const buildOfficeTower: BuildingBuilder = (random) => {
+const buildOfficeTower: BuildingBuilder = (random, look) => {
   const width = randomIn(random, OFFICE_TOWER.WIDTH);
   const depth = randomIn(random, OFFICE_TOWER.DEPTH);
   const height = randomIn(random, OFFICE_TOWER.HEIGHT);
@@ -326,7 +327,7 @@ const buildOfficeTower: BuildingBuilder = (random) => {
     width,
     height,
     depth,
-    color: pickBuildingWallColor(random, OFFICE_PALETTE),
+    color: wallColor(random, look, look.palettes.office),
   });
 
   const { PANE_WIDTH, FLOOR_HEIGHT, LOBBY_HEIGHT, MULLION, CROWN } =
@@ -454,11 +455,11 @@ const addBalcony = (
   });
 };
 
-const buildApartmentBlock: BuildingBuilder = (random) => {
+const buildApartmentBlock: BuildingBuilder = (random, look) => {
   const width = randomIn(random, APARTMENT_BLOCK.WIDTH);
   const depth = randomIn(random, APARTMENT_BLOCK.DEPTH);
   const height = randomIn(random, APARTMENT_BLOCK.HEIGHT);
-  const trim = pick(random, BUILDING_TRIM_PALETTE);
+  const trim = pick(random, look.palettes.trim);
   const faceX = width / 2;
   const columns = randomIntIn(random, APARTMENT_BLOCK.COLUMNS);
   const kind = pick(random, APARTMENT_BLOCK.WINDOW_KINDS);
@@ -473,7 +474,7 @@ const buildApartmentBlock: BuildingBuilder = (random) => {
     width,
     height,
     depth,
-    color: pickBuildingWallColor(random, APARTMENT_PALETTE),
+    color: wallColor(random, look, look.palettes.apartment),
   });
 
   addCornice(batch, {
@@ -534,11 +535,14 @@ const BUILDERS: Readonly<Record<BuildingStyle, BuildingBuilder>> = {
   [BUILDING_STYLE.APARTMENT]: buildApartmentBlock,
 };
 
-/** Deterministic: the same seed always yields the same building. */
-export const createBuildingModel = (seed: number): IStreetModel => {
+/** Deterministic: the same seed and look always yield the same building. */
+export const createBuildingModel = (
+  seed: number,
+  look: IBuildingLevelConfig,
+): IStreetModel => {
   const random = createRng(seed);
 
-  const { style } = pickWeighted(random, BUILDING_STYLE_WEIGHTS);
+  const { style } = pickWeighted(random, look.styleWeights);
 
-  return BUILDERS[style](random);
+  return BUILDERS[style](random, look);
 };

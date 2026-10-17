@@ -11,6 +11,7 @@ import { createRoadSignModel } from "../assets/roadSign";
 import { createTrashBinModel } from "../assets/trashBin";
 import { createTrafficLightModel } from "../assets/trafficLight";
 import { OVERHEAD_TRAFFIC_LIGHT, STREET, STREET_ROW } from "../constants/environment/street";
+import type { IBuildingLevelConfig } from "../levels/types";
 import { ROAD_HALF_WIDTH, STREET_SIDE, STREET_SIDES } from "../constants/world";
 import { buildCrosswalkZPositions } from "./crosswalkLayout";
 import { buildRoadSignPlacements } from "./roadSignLayout";
@@ -47,7 +48,10 @@ const CURB_X = ROAD_HALF_WIDTH + STREET.SIDEWALK_WIDTH;
 const facingRoad = (side: number): number =>
   side === STREET_SIDE.RIGHT ? Math.PI : 0;
 
-export const createEnvironment = (scene: THREE.Scene): IEnvironment => {
+export const createEnvironment = (
+  scene: THREE.Scene,
+  buildings: IBuildingLevelConfig,
+): IEnvironment => {
   const pieces: IScrollingPiece[] = [];
   const owned: IBatchedModel[] = [];
 
@@ -171,6 +175,7 @@ export const createEnvironment = (scene: THREE.Scene): IEnvironment => {
     lineRow(BUILDINGS.COUNT_PER_SIDE, (index) => {
       const model = createBuildingModel(
         index + (isRight ? BUILDINGS.SEED_RIGHT : BUILDINGS.SEED_LEFT),
+        buildings,
       );
 
       const x =

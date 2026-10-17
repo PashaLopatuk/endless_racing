@@ -42,8 +42,16 @@ export const randomizeHex = (hex: number, random: Rng): number => {
   return randomizeWith(hex, random, COLOR_RANDOMIZE);
 };
 
-export const randomizeBuildingHex = (hex: number, random: Rng): number => {
-  return randomizeWith(hex, random, BUILDING_COLOR_RANDOMIZE);
+export const randomizeBuildingHex = (
+  hex: number,
+  random: Rng,
+  spreadConfig: {
+    HUE: number;
+    SATURATION: number;
+    LIGHTNESS: number;
+  } = BUILDING_COLOR_RANDOMIZE,
+): number => {
+  return randomizeWith(hex, random, spreadConfig);
 };
 
 export const mixHex = (from: number, to: number, amount: number): number => {

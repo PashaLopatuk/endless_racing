@@ -4,6 +4,7 @@ import { HUD_TEXT } from "../../constants/hud";
 import { PLAYER } from "../../game/constants/player";
 import { UNITS } from "../../game/constants/world";
 import { createGame } from "../../game/game";
+import { LEVELS, type ILevelConfig } from "../../game/levels";
 import type { IGameController, IGameHudState } from "../../game/types";
 
 import "./GameCanvas.css";
@@ -33,7 +34,12 @@ const OverlayPanel = ({ title, actionLabel, onAction }: IOverlayPanelProps) => (
   </div>
 );
 
-export const GameCanvas = () => {
+interface Props {
+  level: ILevelConfig;
+  onLevelChange?: (levelId: string) => void;
+}
+
+export const GameCanvas = ({ level, onLevelChange }: Props) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasFailed, setHasFailed] = useState(false);
   const [hud, setHud] = useState<IGameHudState>(INITIAL_HUD);
@@ -52,31 +58,35 @@ export const GameCanvas = () => {
     setIsLoading(true);
     setHud(INITIAL_HUD);
 
-    const game = createGame(container, {
-      onReady: () => {
-        if (!isEffectActive) {
-          return;
-        }
+    const game = createGame(
+      container,
+      {
+        onReady: () => {
+          if (!isEffectActive) {
+            return;
+          }
 
-        setHasFailed(false);
-        setIsLoading(false);
-      },
-      onTick: (nextHud) => {
-        if (!isEffectActive) {
-          return;
-        }
+          setHasFailed(false);
+          setIsLoading(false);
+        },
+        onTick: (nextHud) => {
+          if (!isEffectActive) {
+            return;
+          }
 
-        setHud(nextHud);
-      },
-      onError: () => {
-        if (!isEffectActive) {
-          return;
-        }
+          setHud(nextHud);
+        },
+        onError: () => {
+          if (!isEffectActive) {
+            return;
+          }
 
-        setIsLoading(false);
-        setHasFailed(true);
+          setIsLoading(false);
+          setHasFailed(true);
+        },
       },
-    });
+      level,
+    );
     gameRef.current = game;
 
     return () => {
@@ -84,8 +94,11 @@ export const GameCanvas = () => {
       game.dispose();
       gameRef.current = null;
     };
-  }, []);
+  }, [level]);
 
+  const levelOptions = LEVELS.some((entry) => entry.id === level.id)
+    ? LEVELS
+    : [level, ...LEVELS];
   const healthPercent = hud.maxHealth > 0 ? (Math.max(0, hud.health) / hud.maxHealth) * UNITS.PERCENT : 0;
   const isHudVisible = !isLoading && !hasFailed;
   const isRacing = isHudVisible && !hud.isGameOver && !hud.isPaused;
@@ -108,6 +121,20 @@ export const GameCanvas = () => {
               <button type="button" className="game-pause-button" onClick={() => gameRef.current?.setPaused(!hud.isPaused)}>
                 {hud.isPaused ? HUD_TEXT.RESUME : HUD_TEXT.PAUSE}
               </button>
+            )}
+            {onLevelChange && (
+              <select
+                className="game-level-select"
+                value={level.id}
+                aria-label="Level"
+                onChange={(event) => onLevelChange(event.target.value)}
+              >
+                {levelOptions.map((entry) => (
+                  <option key={entry.id} value={entry.id}>
+                    {entry.name}
+                  </option>
+                ))}
+              </select>
             )}
           </div>
           <div className="game-health">

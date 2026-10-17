@@ -74,7 +74,10 @@ const createGround = (): THREE.Mesh<
   return ground;
 };
 
-export const createGameScene = (container: HTMLElement): IGameScene => {
+export const createGameScene = (
+  container: HTMLElement,
+  outputGammaValue: number,
+): IGameScene => {
   const scene = new THREE.Scene();
 
   scene.background = new THREE.Color(SCENE_LIGHTING.SKY_COLOR);
@@ -167,7 +170,7 @@ export const createGameScene = (container: HTMLElement): IGameScene => {
   const renderPipeline = new RenderPipeline(renderer);
 
   const composed = mBlur.mul(vignette);
-  const outputGamma = float(MOTION_BLUR.OUTPUT_GAMMA);
+  const outputGamma = float(outputGammaValue);
   const gradedRgb = pow(max(composed.rgb, float(0)), outputGamma);
 
   renderPipeline.outputNode = vec4(gradedRgb, composed.a);

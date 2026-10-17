@@ -4,14 +4,12 @@ import * as RAPIER from "@dimforge/rapier3d-compat";
 import { createVehicleModel, type IVehicleModel } from "./assets/vehicles";
 import { BODY_KIND } from "./constants/kinds";
 import {
-  INITIAL_TRAFFIC,
   NPC_BODY,
-  NPC_PAINT_PALETTE,
   PARKING_ZONE,
   TRAFFIC,
   type ITrafficSeed,
 } from "./constants/traffic";
-import { VEHICLE_KINDS } from "./constants/vehicles";
+import type { ICarLevelConfig } from "./levels/types";
 import { CAR_Y, LANE, VEHICLE_HITBOX } from "./constants/world";
 import { getLaneCenterX } from "./util/lane";
 import { randomRange } from "./util/math";
@@ -103,12 +101,13 @@ const createNpcSlot = (
   world: RAPIER.World,
   scene: THREE.Scene,
   index: number,
+  cars: ICarLevelConfig,
 ): INpcSlot => {
   const id = TRAFFIC.FIRST_ID + index;
 
   const model = createVehicleModel({
-    kind: VEHICLE_KINDS[index % VEHICLE_KINDS.length],
-    paint: NPC_PAINT_PALETTE[index % NPC_PAINT_PALETTE.length],
+    kind: cars.kinds[index % cars.kinds.length],
+    paint: cars.paintPalette[index % cars.paintPalette.length],
     lampBrightness: TRAFFIC.LAMP_BRIGHTNESS_MIN,
     hasSpotlights: false,
   });
@@ -170,9 +169,10 @@ const parkSlot = (slot: INpcSlot) => {
 export const createTraffic = (
   world: RAPIER.World,
   scene: THREE.Scene,
+  cars: ICarLevelConfig,
 ): ITraffic => {
   const slots = Array.from({ length: TRAFFIC.POOL_SIZE }, (_, index) =>
-    createNpcSlot(world, scene, index),
+    createNpcSlot(world, scene, index, cars),
   );
   const slotsById = new Map(slots.map((slot) => [slot.id, slot]));
   const parkedScratch: INpcSlot[] = [];
@@ -201,7 +201,7 @@ export const createTraffic = (
       return;
     }
 
-    const paint = NPC_PAINT_PALETTE[paintCursor % NPC_PAINT_PALETTE.length];
+    const paint = cars.paintPalette[paintCursor % cars.paintPalette.length];
 
     paintCursor += 1;
 
@@ -291,13 +291,13 @@ export const createTraffic = (
     spawn({
       lane: pick(Math.random, openLanes),
       z,
-      cruiseSpeed: randomRange(TRAFFIC.MIN_SPEED, TRAFFIC.MAX_SPEED),
+      cruiseSpeed: randomRange(cars.minSpeed, cars.maxSpeed),
     });
   };
 
   const seedInitial = () => {
     slots.filter((slot) => slot.isActive).forEach(despawn);
-    INITIAL_TRAFFIC.forEach(spawn);
+    cars.initialTraffic.forEach(spawn);
     spawnTimer = TRAFFIC.INITIAL_SPAWN_DELAY;
   };
 

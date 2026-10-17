@@ -39,6 +39,14 @@
   pointer-events: auto;
 }
 
+.game-level-select {
+  padding: 8px 10px;
+  border: 1px solid rgba(232, 220, 190, 0.35);
+  background: rgba(8, 10, 14, 0.82);
+  color: #f2efe8;
+  font-size: 15px;
+}
+
 .game-pause-button {
   padding: 8px 14px;
   border: 1px solid rgba(232, 220, 190, 0.35);
