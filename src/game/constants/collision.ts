@@ -24,8 +24,10 @@ export const COLLISION = {
   MIN_PUSH_OFFSET: 0.05,
 
   SIDE_SEPARATION: 0.42,
-  SIDE_PUSH_IMPULSE: 95,
-  BUMPER_PUSH_IMPULSE: 150,
+  /** Instant sideways speed (m/s) added to an NPC on a hit. */
+  SIDE_PUSH_IMPULSE: 12,
+  /** Longitudinal shove; traffic turns this into meters with a fixed scale. */
+  BUMPER_PUSH_IMPULSE: 32,
   BUMPER_SIDE_PUSH_RATIO: 0.25,
   NPC_PUSH_RATIO: 0.4,
 } as const;

@@ -7,7 +7,8 @@ export const TRAFFIC = {
   MAX_SPEED: 16,
   /** NPCs always drift toward the camera at least this fast, so stalled traffic still clears. */
   MIN_CLOSING_SPEED: 0.5,
-  LATERAL_DAMPING: 0.986,
+  /** Per-step bleed on hit slide. Lower values settle a shove in a fraction of a second. */
+  LATERAL_DAMPING: 0.91,
 
   SPAWN_Z: 150,
   SPAWN_Z_RANDOMIZE: 22,

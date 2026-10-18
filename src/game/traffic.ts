@@ -13,6 +13,7 @@ import {
 } from "./constants/traffic";
 import { VEHICLE_KINDS } from "./constants/vehicles";
 import { CAR_Y, LANE, VEHICLE_HITBOX } from "./constants/world";
+import { VEHICLE_ACTIVE_COLLISION_TYPES } from "./physics";
 import { getLaneCenterX } from "./util/lane";
 import { randomRange } from "./util/math";
 import { pick } from "./util/random";
@@ -92,7 +93,8 @@ const createNpcBody = (world: RAPIER.World, id: number): RAPIER.RigidBody => {
       .setDensity(NPC_BODY.DENSITY)
       .setFriction(NPC_BODY.FRICTION)
       .setRestitution(NPC_BODY.RESTITUTION)
-      .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS),
+      .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
+      .setActiveCollisionTypes(VEHICLE_ACTIVE_COLLISION_TYPES),
     body,
   );
 

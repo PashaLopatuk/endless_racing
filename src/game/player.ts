@@ -5,8 +5,10 @@ import { createVehicleModel } from "./assets/vehicles";
 import { IMPACT_DAMAGE, IMPACT_SPEED_LOSS } from "./constants/collision";
 import { BODY_KIND } from "./constants/kinds";
 import { PLAYER, PLAYER_VEHICLE_KIND } from "./constants/player";
+import { NPC_BODY } from "./constants/traffic";
 import { CAR_Y, DRIVABLE_X, VEHICLE_HITBOX } from "./constants/world";
 import type { IDriveGesture } from "./input";
+import { VEHICLE_ACTIVE_COLLISION_TYPES } from "./physics";
 import type { ImpactKind } from "./types";
 import {
   frontPivotPose,
@@ -17,7 +19,6 @@ import {
 } from "./util/drive";
 import { getLaneCenterX } from "./util/lane";
 import { smoothNumberValueExponentially, clamp } from "./util/math";
-import { NPC_BODY } from "./constants/traffic";
 
 export interface IPlayer {
   readonly body: RAPIER.RigidBody;
@@ -82,7 +83,8 @@ const createPlayerBody = (world: RAPIER.World): RAPIER.RigidBody => {
     )
       .setFriction(PLAYER.FRICTION)
       .setRestitution(PLAYER.RESTITUTION)
-      .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS),
+      .setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS)
+      .setActiveCollisionTypes(VEHICLE_ACTIVE_COLLISION_TYPES),
     body,
   );
 
@@ -139,17 +141,6 @@ export const createPlayer = (
 
     state.wasTouching = false;
   };
-
-  // const processFastMovementSteerAffect = (dt: number) => {
-  //   const t = smoothNumberValueExp(
-  //     state.frontX,
-  //     state.speed,
-  //     PLAYER.STEER_RESPONSE,
-  //     dt,
-  //   );
-
-  //   state.frontX = clampToRoad(t);
-  // };
 
   const processMovementChange = (gesture: IDriveGesture, dt: number) => {
     if (gesture.isActive && !state.wasTouching) {
