@@ -128,10 +128,7 @@ const pickNpcPaint = (outputGamma: number): number =>
 const pickNpcKind = (kinds: readonly VehicleKind[]): VehicleKind =>
   pick(Math.random, [...kinds]);
 
-const pickNpcCruiseSpeed = (
-  cars: ICarLevelConfig,
-  seed: number,
-): number => {
+const pickNpcCruiseSpeed = (cars: ICarLevelConfig, seed: number): number => {
   const random = createRng(seed ^ 0x5a5a);
   const mid = (cars.minSpeed + cars.maxSpeed) * 0.5;
 
@@ -146,11 +143,7 @@ const isFarAheadSpawnZ = (playerWorldZ: number, z: number): boolean =>
   z >= playerWorldZ + TRAFFIC.SPAWN_AHEAD_MIN &&
   z <= playerWorldZ + TRAFFIC.FILL_AHEAD_MAX;
 
-const gridZForBin = (
-  playerWorldZ: number,
-  lane: number,
-  bin: number,
-): number =>
+const gridZForBin = (playerWorldZ: number, lane: number, bin: number): number =>
   playerWorldZ +
   TRAFFIC.SPAWN_AHEAD_MIN +
   lane * TRAFFIC.LANE_GRID_OFFSET +
@@ -371,8 +364,7 @@ const buildGridInitialTraffic = (
         continue;
       }
 
-      const initialFillRoll =
-        ((lane * 7919 + bin * 104729) % 1000) / 1000;
+      const initialFillRoll = ((lane * 7919 + bin * 104729) % 1000) / 1000;
 
       if (initialFillRoll > TRAFFIC.INITIAL_GRID_FILL_RATIO) {
         continue;
@@ -402,10 +394,7 @@ const buildGridInitialTraffic = (
 
 const NPC_LENGTH = VEHICLE_HITBOX.HALF_LENGTH * 2;
 
-const getNpcClosingSpeed = (
-  cruiseSpeed: number,
-  playerSpeed: number,
-): number =>
+const getNpcClosingSpeed = (cruiseSpeed: number, playerSpeed: number): number =>
   Math.max(TRAFFIC.MIN_CLOSING_SPEED, playerSpeed - cruiseSpeed);
 
 /** Positive when the follower is catching a lead car ahead (+Z). */
@@ -615,11 +604,7 @@ export const createTraffic = (
     slot.worldZ += impulse.z * 0.04;
   };
 
-  const isLaneOpenAt = (
-    lane: number,
-    z: number,
-    ignoreId: number,
-  ): boolean => {
+  const isLaneOpenAt = (lane: number, z: number, ignoreId: number): boolean => {
     for (const other of slots) {
       if (!other.isActive || other.id === ignoreId) {
         continue;
@@ -642,7 +627,7 @@ export const createTraffic = (
 
   let playerWorldZ = 0;
   let playerWorldX = getLaneCenterX(PLAYER.START_LANE);
-  let playerLane = PLAYER.START_LANE;
+  let playerLane = PLAYER.START_LANE as number;
 
   const pickEscapeLane = (slot: INpcSlot): number | null => {
     const candidates: number[] = [];
@@ -682,7 +667,11 @@ export const createTraffic = (
     }
 
     const followCruise = resolveFollowCruiseSpeed(slot, slots);
-    const catchUp = getCatchUpSpeed(followCruise, lead.cruiseSpeed, playerSpeed);
+    const catchUp = getCatchUpSpeed(
+      followCruise,
+      lead.cruiseSpeed,
+      playerSpeed,
+    );
 
     if (catchUp <= 0.05) {
       return;
@@ -799,9 +788,7 @@ export const createTraffic = (
       return false;
     }
 
-    if (
-      countLanesAtSlice(z) >= LANE.COUNT - TRAFFIC.MIN_FREE_LANES
-    ) {
+    if (countLanesAtSlice(z) >= LANE.COUNT - TRAFFIC.MIN_FREE_LANES) {
       return false;
     }
 
@@ -842,7 +829,6 @@ export const createTraffic = (
   > | null => {
     const slotCount = getGapFillSlotCount();
     const zMax = playerWorldZ + TRAFFIC.FILL_AHEAD_MAX;
-    const binCount = slotCount / LANE.COUNT;
 
     for (let attempt = 0; attempt < slotCount; attempt += 1) {
       const slotIndex = (gapFillCursor + attempt) % slotCount;
@@ -876,8 +862,7 @@ export const createTraffic = (
 
     for (
       let spawnAttempt = 0;
-      spawnAttempt < TRAFFIC.SPAWNS_PER_TICK &&
-      activeCount < maxActive;
+      spawnAttempt < TRAFFIC.SPAWNS_PER_TICK && activeCount < maxActive;
       spawnAttempt += 1
     ) {
       const placement = findGapFillPlacement();
@@ -926,7 +911,13 @@ export const createTraffic = (
   };
 
   return {
-    update: (playerSpeed, nextPlayerWorldZ, nextPlayerWorldX, dt, allowSpawn) => {
+    update: (
+      playerSpeed,
+      nextPlayerWorldZ,
+      nextPlayerWorldX,
+      dt,
+      allowSpawn,
+    ) => {
       playerWorldZ = nextPlayerWorldZ;
       playerWorldX = nextPlayerWorldX;
       playerLane = getNearestLaneIndex(playerWorldX);
