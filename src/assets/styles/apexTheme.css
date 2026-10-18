@@ -1,0 +1,44 @@
+:root {
+  --menu-font-sans: "Montserrat", system-ui, sans-serif;
+  --menu-font-mono: "Rajdhani", ui-monospace, monospace;
+  --menu-font-grotesk: "Space Grotesk", system-ui, sans-serif;
+
+  --menu-cyan: #38bdf8;
+  --menu-cyan-glow: #0284c7;
+  --menu-gold: #fbbf24;
+  --menu-red: #f43f5e;
+  --menu-emerald: #34d399;
+
+  --menu-bg: #000000;
+  --menu-slate-950: #020617;
+  --menu-slate-900: #0f172a;
+  --menu-slate-800: #1e293b;
+  --menu-slate-600: #475569;
+  --menu-slate-300: #cbd5e1;
+  --menu-slate-200: #e2e8f0;
+  --menu-white: #ffffff;
+
+  --menu-glass-bg: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  --menu-glass-border: rgba(255, 255, 255, 0.35);
+  --menu-glass-shadow:
+    0 16px 36px -10px rgba(0, 0, 0, 0.55),
+    inset 0 1px 1px rgba(255, 255, 255, 0.4);
+  --menu-glass-blur: 24px;
+
+  --menu-dark-card-bg: linear-gradient(
+    120deg,
+    rgba(15, 23, 42, 0.75) 0%,
+    rgba(15, 23, 42, 0.55) 100%
+  );
+
+  --menu-radius-lg: 30px;
+  --menu-radius-md: 16px;
+  --menu-radius-sm: 12px;
+
+  --menu-transition-fast: 200ms ease;
+  --menu-transition-panel: 300ms ease-out;
+}

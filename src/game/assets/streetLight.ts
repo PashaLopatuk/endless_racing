@@ -54,5 +54,9 @@ export const createStreetLightModel = (
     });
   });
 
-  return toStreetModel(batch, STREET_LIGHT.FOOTPRINT, STREET_LIGHT.FOOTPRINT);
+  return toStreetModel(
+    batch,
+    STREET_LIGHT.FOOTPRINT,
+    STREET_LIGHT.FOOTPRINT,
+  );
 };

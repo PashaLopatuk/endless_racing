@@ -1,5 +1,7 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
+import { MeshLambertNodeMaterial } from "three/webgpu";
+import { attribute, float, mix, positionWorld, smoothstep, vec3 } from "three/tsl";
 
 import { ASSET_KEY, BATCH_LAYER, BATCH_LAYERS, FACADE_SHADE, GEOMETRY_ATTRIBUTE, RGB_ITEM_SIZE, type BatchLayer } from "../constants/assets";
 import { SCENE_BRIGHTNESS } from "../constants/sceneBrightness";
@@ -51,12 +53,47 @@ export interface IMeshBatch {
   build(): IBatchedModel;
 }
 
-const getLayerMaterial = (layer: BatchLayer): THREE.Material => {
+/** Flat facade color: warm street light at the base, cold blue toward the roof. */
+const createFacadeMaterial = (): THREE.Material => {
+  const material = new MeshLambertNodeMaterial();
+
+  material.flatShading = true;
+
+  const vertexColor = attribute("color", "vec3");
+  const height = smoothstep(float(1.2), float(46), positionWorld.y);
+  const grade = mix(vec3(1.45, 0.82, 0.46), vec3(0.34, 0.44, 0.78), height);
+
+  material.colorNode = vertexColor.mul(grade);
+
+  return material;
+};
+
+const getLayerMaterial = (
+  layer: BatchLayer,
+  useFacadeGradient: boolean,
+): THREE.Material => {
   switch (layer) {
     case BATCH_LAYER.GLOW:
-      return sharedAssets.material(ASSET_KEY.BATCH_GLOW_MATERIAL, () => new THREE.MeshBasicMaterial({ vertexColors: true }));
+      return sharedAssets.material(
+        ASSET_KEY.BATCH_GLOW_MATERIAL,
+        () => new THREE.MeshBasicMaterial({ vertexColors: true }),
+      );
     case BATCH_LAYER.SOLID:
-      return sharedAssets.material(ASSET_KEY.BATCH_SOLID_MATERIAL, () => new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }));
+      if (useFacadeGradient) {
+        return sharedAssets.material(
+          ASSET_KEY.BATCH_FACADE_MATERIAL,
+          createFacadeMaterial,
+        );
+      }
+
+      return sharedAssets.material(
+        ASSET_KEY.BATCH_SOLID_MATERIAL,
+        () =>
+          new THREE.MeshLambertMaterial({
+            vertexColors: true,
+            flatShading: true,
+          }),
+      );
   }
 };
 
@@ -129,12 +166,15 @@ const createLayerBuckets = (): Record<BatchLayer, THREE.BufferGeometry[]> => ({
 export interface IMeshBatchOptions {
   /** Scales baked vertex RGB (e.g. darken street geometry). Default 1. */
   vertexScale?: number;
+  /** Vertical warm-to-cold grade for building and house walls. */
+  useFacadeGradient?: boolean;
 }
 
 export const createMeshBatch = (
   options: IMeshBatchOptions = {},
 ): IMeshBatch => {
   const vertexScale = options.vertexScale ?? 1;
+  const useFacadeGradient = options.useFacadeGradient ?? false;
   let buckets = createLayerBuckets();
 
   const addGeometry = ({ geometry, color, position, rotation, layer = BATCH_LAYER.SOLID, isShaded = false }: IGeometryPart) => {
@@ -175,7 +215,7 @@ export const createMeshBatch = (
       }
       geometry.computeBoundingSphere();
       merged.push(geometry);
-      object.add(new THREE.Mesh(geometry, getLayerMaterial(layer)));
+      object.add(new THREE.Mesh(geometry, getLayerMaterial(layer, useFacadeGradient)));
     }
 
     buckets = createLayerBuckets();
@@ -194,4 +234,7 @@ export const toStreetModel = (batch: IMeshBatch, width: number, depth: number): 
 
 /** Buildings and houses: darker facades than the road batch. */
 export const createStreetMeshBatch = (): IMeshBatch =>
-  createMeshBatch({ vertexScale: SCENE_BRIGHTNESS.BUILDING_VERTEX });
+  createMeshBatch({
+    vertexScale: SCENE_BRIGHTNESS.BUILDING_VERTEX,
+    useFacadeGradient: true,
+  });

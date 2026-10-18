@@ -1,22 +1,28 @@
 import * as THREE from "three";
 
-import { createStarSky } from "./assets/sky";
-import { CAMERA, GROUND, RENDERER, SCENE_LIGHTING } from "./constants/camera";
+import { createLevelSky } from "./assets/sky";
+import { CAMERA, GROUND, RENDERER } from "./constants/camera";
+import type { ILevelConfig, ILevelPalette } from "./levels/types";
 import { MOTION_BLUR } from "./constants/postfx";
 import { HALF_PI } from "./constants/world";
 import { getSpeedRatio } from "./util/drive";
 import { smoothNumberValueExponentially } from "./util/math";
 
+import { bloom } from "three/addons/tsl/display/BloomNode.js";
 import { motionBlur } from "three/addons/tsl/display/MotionBlur.js";
 
 import {
+  color,
   float,
+  fog,
+  rangeFogFactor,
   max,
   mix,
   pass,
   mrt,
   output,
   pow,
+  smoothstep,
   screenUV,
   velocity,
   uniform,
@@ -39,59 +45,97 @@ const viewportSize = (container: HTMLElement) => ({
   height: Math.max(container.clientHeight, RENDERER.MIN_VIEWPORT_SIZE),
 });
 
-const addLights = (scene: THREE.Scene) => {
-  const { HEMISPHERE, MOON, FILL } = SCENE_LIGHTING;
+const addLights = (scene: THREE.Scene, palette: ILevelPalette) => {
+  const { hemisphere, keyLight, fillLight } = palette;
 
   scene.add(
     new THREE.HemisphereLight(
-      HEMISPHERE.SKY,
-      HEMISPHERE.GROUND,
-      HEMISPHERE.INTENSITY,
+      hemisphere.sky,
+      hemisphere.ground,
+      hemisphere.intensity,
     ),
   );
 
-  const moon = new THREE.DirectionalLight(MOON.COLOR, MOON.INTENSITY);
+  const key = new THREE.DirectionalLight(keyLight.color, keyLight.intensity);
 
-  moon.position.set(...MOON.POSITION);
-  scene.add(moon);
+  key.position.set(...keyLight.position);
+  scene.add(key);
 
-  const fill = new THREE.DirectionalLight(FILL.COLOR, FILL.INTENSITY);
+  const fill = new THREE.DirectionalLight(fillLight.color, fillLight.intensity);
 
-  fill.position.set(...FILL.POSITION);
+  fill.position.set(...fillLight.position);
   scene.add(fill);
 };
 
-const createGround = (): THREE.Mesh<
+const DAY_FOG_CURVE = 0.74;
+const DAY_FOG_HAZE_DIM = 0.84;
+
+const createFogHaze = (palette: ILevelPalette): THREE.Color => {
+  if (palette.skyMode === "day") {
+    const [hr, hg, hb] = palette.horizon;
+    const [zr, zg, zb] = palette.zenith;
+    const zenithMix = 0.48;
+
+    const haze = new THREE.Color(
+      hr * (1 - zenithMix) + zr * zenithMix,
+      hg * (1 - zenithMix) + zg * zenithMix,
+      hb * (1 - zenithMix) + zb * zenithMix,
+    );
+
+    haze.lerp(new THREE.Color(palette.skyColor), 0.28);
+    haze.multiplyScalar(DAY_FOG_HAZE_DIM);
+
+    return haze;
+  }
+
+  return new THREE.Color(palette.skyColor).lerp(new THREE.Color(0x7f97b8), 0.42);
+};
+
+const createFogFactorNode = (palette: ILevelPalette) => {
+  const linear = rangeFogFactor(float(palette.fogNear), float(palette.fogFar));
+
+  if (palette.skyMode === "day") {
+    const eased = pow(linear, float(DAY_FOG_CURVE));
+
+    return smoothstep(float(0), float(1), eased);
+  }
+
+  return linear;
+};
+
+const createGround = (groundColor: number): THREE.Mesh<
   THREE.PlaneGeometry,
   THREE.MeshLambertMaterial
 > => {
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(GROUND.WIDTH, GROUND.LENGTH),
-    new THREE.MeshLambertMaterial({ color: GROUND.COLOR, flatShading: true }),
+    new THREE.MeshLambertMaterial({ color: groundColor, flatShading: true }),
   );
   ground.rotation.x = -HALF_PI;
   ground.position.set(0, GROUND.Y, GROUND.Z);
   return ground;
 };
 
-export const createGameScene = (container: HTMLElement): IGameScene => {
+export const createGameScene = (
+  container: HTMLElement,
+  level: ILevelConfig,
+): IGameScene => {
+  const { palette, terrain } = level;
   const scene = new THREE.Scene();
 
-  scene.background = new THREE.Color(SCENE_LIGHTING.SKY_COLOR);
+  const haze = createFogHaze(palette);
 
-  scene.fog = new THREE.Fog(
-    SCENE_LIGHTING.SKY_COLOR,
-    SCENE_LIGHTING.FOG_NEAR,
-    SCENE_LIGHTING.FOG_FAR,
-  );
+  scene.background = new THREE.Color(palette.skyColor);
+  scene.fog = new THREE.Fog(haze, palette.fogNear, palette.fogFar);
+  scene.fogNode = fog(color(haze), createFogFactorNode(palette));
 
-  addLights(scene);
+  addLights(scene, palette);
 
-  const sky = createStarSky();
+  const sky = createLevelSky(palette);
 
   scene.add(sky.mesh);
 
-  const ground = createGround();
+  const ground = createGround(terrain.groundColor);
 
   scene.add(ground);
 
@@ -156,6 +200,13 @@ export const createGameScene = (container: HTMLElement): IGameScene => {
     .mul(spatialBlurScale);
 
   const mBlur = motionBlur(beauty, vel, vec4(MOTION_BLUR.SAMPLE_COUNT));
+  const isDayLevel = palette.skyMode === "day";
+  const lampBloom = bloom(
+    beauty,
+    isDayLevel ? 0.26 : 0.42,
+    isDayLevel ? 0.34 : 0.38,
+    isDayLevel ? 0.68 : 0.56,
+  );
 
   const vignette = screenUV
     .distance(0.5)
@@ -166,8 +217,8 @@ export const createGameScene = (container: HTMLElement): IGameScene => {
 
   const renderPipeline = new RenderPipeline(renderer);
 
-  const composed = mBlur.mul(vignette);
-  const outputGamma = float(MOTION_BLUR.OUTPUT_GAMMA);
+  const composed = mBlur.add(lampBloom).mul(vignette);
+  const outputGamma = float(palette.outputGamma);
   const gradedRgb = pow(max(composed.rgb, float(0)), outputGamma);
 
   renderPipeline.outputNode = vec4(gradedRgb, composed.a);

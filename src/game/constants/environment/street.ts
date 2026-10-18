@@ -1,96 +1,11 @@
-export const STREET = {
-  ROAD_SEGMENT_LENGTH: 48,
-  ROAD_SEGMENT_COUNT: 8,
-  /** Segments placed behind the camera so the road never shows a gap while wrapping. */
-  ROAD_SEGMENTS_BEHIND: 1,
-  SIDEWALK_WIDTH: 2.6,
-  DESPAWN_Z: -72,
-} as const;
-
-export const STREET_ROW = {
-  BUILDINGS: {
-    COUNT_PER_SIDE: 12,
-    SPACING: 28,
-    START_Z: -48,
-    GAP: 1.2,
-    SEED_LEFT: 1,
-    SEED_RIGHT: 100,
-  },
-  HOUSES: {
-    COUNT_PER_SIDE: 12,
-    SPACING: 18,
-    START_Z: -24,
-    ROW_DEPTH: 10,
-    CURB_GAP: 0.45,
-    SEED_LEFT: 400,
-    SEED_RIGHT: 500,
-  },
-  TRAFFIC_LIGHTS: {
-    COUNT_PER_SIDE: 7,
-    SPACING: 48,
-    START_Z: -16,
-    CURB_OFFSET: 1.15,
-    SEED_LEFT: 0,
-    SEED_RIGHT: 20,
-  },
-  STREET_LIGHTS: {
-    COUNT_PER_SIDE: 12,
-    SPACING: 28,
-    START_Z: -22,
-    /** Distance from road center to pole, on the sidewalk strip. */
-    SIDEWALK_INSET: 2.05,
-    SEED_LEFT: 60,
-    SEED_RIGHT: 160,
-  },
-  CROSSWALKS: {
-    COUNT: 4,
-    SEED: 41803,
-    START_Z: 24,
-    MIN_SPACING: 62,
-    SPACING_JITTER: 48,
-  },
-  ROAD_SIGNS: {
-    COUNT: 20,
-    SEED: 59127,
-    START_Z: -6,
-    MIN_SPACING: 14,
-    SPACING_JITTER: 20,
-    /** Distance from road center to the sign post on the sidewalk. */
-    SIDEWALK_INSET: 1.55,
-  },
-  TRASH_BINS: {
-    SIDEWALK: {
-      COUNT: 5,
-      SEED: 33491,
-      START_Z: 4,
-      MIN_SPACING: 52,
-      SPACING_JITTER: 38,
-      /** Distance from road center to bin on the sidewalk strip. */
-      INSET: 1.25,
-    },
-    BETWEEN_HOUSES: {
-      SEED: 8821,
-      /** Chance to place a bin in each gap between neighbouring houses. */
-      GAP_CHANCE: 0.22,
-      Z_JITTER: [-1.2, 1.2] as const,
-      /** Offset from curb into the row between houses and towers. */
-      ROW_INSET: 6.2,
-    },
-  },
-} as const;
-
 export const ROAD = {
-  ASPHALT_COLOR: 0x242a34,
   ASPHALT_THICKNESS: 0.2,
-  SIDEWALK_COLOR: 0x34383f,
   SIDEWALK_HEIGHT: 0.28,
   SIDEWALK_Y: 0.04,
   MARK_THICKNESS: 0.025,
   MARK_Y: 0.02,
-  EDGE_COLOR: 0xd4c06a,
   EDGE_WIDTH: 0.09,
   EDGE_INSET: 0.16,
-  DASH_COLOR: 0xeae6dc,
   DASH_WIDTH: 0.1,
   DASH_LENGTH: 2.4,
   DASH_STRIDE: 8,
@@ -98,8 +13,6 @@ export const ROAD = {
 } as const;
 
 export const CROSSWALK = {
-  STRIPE_COLOR: ROAD.DASH_COLOR,
-  STOP_BAR_COLOR: ROAD.DASH_COLOR,
   STRIPE: {
     /** Line thickness across the road (local X). */
     WIDTH: 0.42,
@@ -142,6 +55,43 @@ export const OVERHEAD_TRAFFIC_LIGHT = {
   SEED: 880,
 } as const;
 
+export const GUIDE_SIGN = {
+  COUNT: 4,
+  START_Z: 36,
+  SPACING: 96,
+  SEED: 420,
+  SPAN_PAST_EDGE: 0.35,
+  POLE: { SIZE: [0.16, 6.2, 0.16] as const, Y: 3.1, COLOR: 0x2a2e33 },
+  BEAM_Y: 6.35,
+  BEAM_SIZE: [0, 0.16, 0.16] as const,
+  PANEL_Y: 5.55,
+  PANEL_WIDTH: 4.4,
+  PANEL_HEIGHT: 1.45,
+  COLORS: {
+    GREEN: "#178a45",
+    BLUE: "#1c6eb5",
+  },
+  /** Inner-lane pair cycled by gantry seed; always green left, blue right. */
+  DESTINATION_PAIRS: [
+    ["Downtown", "Riverside"],
+    ["Airport", "Harbor"],
+    ["North Loop", "South Loop"],
+    ["City Center", "Midtown"],
+    ["Stadium", "University"],
+    ["Tech Park", "Old Town"],
+    ["Industrial", "Waterfront"],
+    ["Mall Blvd", "Park Ave"],
+    ["Convention", "Cruise Port"],
+    ["Uptown", "Lakeview"],
+    ["West Side", "East Side"],
+    ["Central Sta", "Bus Terminal"],
+    ["Arts District", "Music Hall"],
+    ["Hospital", "Medical Ctr"],
+    ["Beach Front", "Pier Nine"],
+    ["Suburbs", "Country Rd"],
+  ] as const,
+} as const;
+
 export const STREET_LIGHT = {
   BASE: { SIZE: [0.42, 0.16, 0.42], Y: 0.08, COLOR: 0x2c3036 },
   POLE: { SIZE: [0.16, 6.4, 0.16], Y: 3.28, COLOR: 0x2c3036 },
@@ -182,7 +132,16 @@ export const STREET_LIGHT = {
 } as const;
 
 export const ROAD_SIGN = {
-  KINDS: ["speed", "warning", "info", "route"],
+  KINDS: [
+    "speed",
+    "warning",
+    "info",
+    "route",
+    "stop",
+    "noEntry",
+    "parking",
+    "crossing",
+  ],
   FOOTPRINT: 0.55,
   POST: {
     COLOR: 0x3a3f46,
@@ -229,6 +188,35 @@ export const ROAD_SIGN = {
       { face: 0x2f6fb3, arrow: 0xf5f3ee, arrowY: 0.04 },
       { face: 0x4a4f58, arrow: 0xf0c020, arrowY: -0.02 },
     ],
+  },
+  STOP: {
+    FACE_COLOR: 0xcf2e2e,
+    LETTER_COLOR: 0xf5f3ee,
+    FACE_SIZE: [0.5, 0.5, 0.04] as const,
+    BAR_SIZE: [0.34, 0.08, 0.022] as const,
+    BAR_OFFSETS: [-0.1, 0, 0.1] as const,
+  },
+  NO_ENTRY: {
+    RING_COLOR: 0xcf2e2e,
+    RING_SIZE: [0.52, 0.52, 0.04] as const,
+    BAR_COLOR: 0xf5f3ee,
+    BAR_SIZE: [0.38, 0.1, 0.025] as const,
+  },
+  PARKING: {
+    FACE_COLOR: 0x2f6fb3,
+    SYMBOL_COLOR: 0xf5f3ee,
+    FACE_SIZE: [0.5, 0.58, 0.04] as const,
+    STEM_SIZE: [0.1, 0.28, 0.022] as const,
+    STEM_Y: 0.06,
+    LOOP_SIZE: [0.22, 0.18, 0.022] as const,
+    LOOP_Y: 0.16,
+  },
+  CROSSING: {
+    FACE_COLOR: 0xf0c020,
+    STRIPE_COLOR: 0x1a1d22,
+    FACE_SIZE: [0.62, 0.5, 0.04] as const,
+    STRIPE_SIZE: [0.48, 0.06, 0.02] as const,
+    STRIPE_YS: [-0.14, -0.04, 0.06, 0.16] as const,
   },
 } as const;
 

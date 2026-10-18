@@ -1,4 +1,4 @@
-import { STREET_ROW } from "../constants/environment/street";
+import type { IStreetRows } from "../levels/types";
 import { STREET_SIDE } from "../constants/world";
 import { chance, createRng, randomIn } from "../util/random";
 
@@ -17,10 +17,12 @@ export interface ITrashBinPlacement {
   zone: TrashBinZone;
 }
 
-export const buildTrashBinPlacements = (): ITrashBinPlacement[] => {
+export const buildTrashBinPlacements = (
+  rows: IStreetRows,
+): ITrashBinPlacement[] => {
   const placements: ITrashBinPlacement[] = [];
-  const { HOUSES } = STREET_ROW;
-  const { SIDEWALK, BETWEEN_HOUSES } = STREET_ROW.TRASH_BINS;
+  const { HOUSES } = rows;
+  const { SIDEWALK, BETWEEN_HOUSES } = rows.TRASH_BINS;
   const { COUNT, SEED, START_Z, MIN_SPACING, SPACING_JITTER } = SIDEWALK;
   const sidewalkRandom = createRng(SEED);
   let z = START_Z;
