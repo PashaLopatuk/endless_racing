@@ -1,9 +1,9 @@
 export const TRAFFIC = {
   FIRST_ID: 1,
-  POOL_SIZE: 48,
-  MAX_ACTIVE: 19,
+  POOL_SIZE: 68,
+  MAX_ACTIVE: 46,
   /** Cap when the player crawls; avoids gridlock ahead. */
-  MAX_ACTIVE_SLOW: 10,
+  MAX_ACTIVE_SLOW: 34,
 
   MIN_SPEED: 7,
   MAX_SPEED: 16,
@@ -13,9 +13,9 @@ export const TRAFFIC = {
   LATERAL_DAMPING: 0.91,
 
   /** How far ahead (m) new cars may appear; closer road is fill-only by drift, never pop-in. */
-  SPAWN_AHEAD_MIN: 118,
+  SPAWN_AHEAD_MIN: 128,
   /** Outer edge of the ahead spawn band (m). */
-  FILL_AHEAD_MAX: 172,
+  FILL_AHEAD_MAX: 222,
   /** Target center-to-center spacing along each lane. */
   TARGET_GRID_SPACING: 41,
   /** Stagger each lane's grid so Z slices are not four-wide walls. */
@@ -89,4 +89,3 @@ export interface ITrafficSeed {
   z: number;
   cruiseSpeed: number;
 }
-
