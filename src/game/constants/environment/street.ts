@@ -59,6 +59,7 @@ export const GUIDE_SIGN = {
   COUNT: 4,
   START_Z: 36,
   SPACING: 96,
+  SEED: 420,
   SPAN_PAST_EDGE: 0.35,
   POLE: { SIZE: [0.16, 6.2, 0.16] as const, Y: 3.1, COLOR: 0x2a2e33 },
   BEAM_Y: 6.35,
@@ -66,8 +67,29 @@ export const GUIDE_SIGN = {
   PANEL_Y: 5.55,
   PANEL_WIDTH: 4.4,
   PANEL_HEIGHT: 1.45,
-  LABELS: ["Downtown", "Riverside"] as const,
-  COLORS: ["#178a45", "#1c6eb5"] as const,
+  COLORS: {
+    GREEN: "#178a45",
+    BLUE: "#1c6eb5",
+  },
+  /** Inner-lane pair cycled by gantry seed; always green left, blue right. */
+  DESTINATION_PAIRS: [
+    ["Downtown", "Riverside"],
+    ["Airport", "Harbor"],
+    ["North Loop", "South Loop"],
+    ["City Center", "Midtown"],
+    ["Stadium", "University"],
+    ["Tech Park", "Old Town"],
+    ["Industrial", "Waterfront"],
+    ["Mall Blvd", "Park Ave"],
+    ["Convention", "Cruise Port"],
+    ["Uptown", "Lakeview"],
+    ["West Side", "East Side"],
+    ["Central Sta", "Bus Terminal"],
+    ["Arts District", "Music Hall"],
+    ["Hospital", "Medical Ctr"],
+    ["Beach Front", "Pier Nine"],
+    ["Suburbs", "Country Rd"],
+  ] as const,
 } as const;
 
 export const STREET_LIGHT = {
@@ -110,7 +132,16 @@ export const STREET_LIGHT = {
 } as const;
 
 export const ROAD_SIGN = {
-  KINDS: ["speed", "warning", "info", "route"],
+  KINDS: [
+    "speed",
+    "warning",
+    "info",
+    "route",
+    "stop",
+    "noEntry",
+    "parking",
+    "crossing",
+  ],
   FOOTPRINT: 0.55,
   POST: {
     COLOR: 0x3a3f46,
@@ -157,6 +188,35 @@ export const ROAD_SIGN = {
       { face: 0x2f6fb3, arrow: 0xf5f3ee, arrowY: 0.04 },
       { face: 0x4a4f58, arrow: 0xf0c020, arrowY: -0.02 },
     ],
+  },
+  STOP: {
+    FACE_COLOR: 0xcf2e2e,
+    LETTER_COLOR: 0xf5f3ee,
+    FACE_SIZE: [0.5, 0.5, 0.04] as const,
+    BAR_SIZE: [0.34, 0.08, 0.022] as const,
+    BAR_OFFSETS: [-0.1, 0, 0.1] as const,
+  },
+  NO_ENTRY: {
+    RING_COLOR: 0xcf2e2e,
+    RING_SIZE: [0.52, 0.52, 0.04] as const,
+    BAR_COLOR: 0xf5f3ee,
+    BAR_SIZE: [0.38, 0.1, 0.025] as const,
+  },
+  PARKING: {
+    FACE_COLOR: 0x2f6fb3,
+    SYMBOL_COLOR: 0xf5f3ee,
+    FACE_SIZE: [0.5, 0.58, 0.04] as const,
+    STEM_SIZE: [0.1, 0.28, 0.022] as const,
+    STEM_Y: 0.06,
+    LOOP_SIZE: [0.22, 0.18, 0.022] as const,
+    LOOP_Y: 0.16,
+  },
+  CROSSING: {
+    FACE_COLOR: 0xf0c020,
+    STRIPE_COLOR: 0x1a1d22,
+    FACE_SIZE: [0.62, 0.5, 0.04] as const,
+    STRIPE_SIZE: [0.48, 0.06, 0.02] as const,
+    STRIPE_YS: [-0.14, -0.04, 0.06, 0.16] as const,
   },
 } as const;
 

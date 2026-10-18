@@ -19,23 +19,6 @@ const INITIAL_HUD: IGameHudState = {
   isPaused: false,
 };
 
-interface IOverlayPanelProps {
-  title: string;
-  actionLabel: string;
-  onAction: () => void;
-}
-
-const OverlayPanel = ({ title, actionLabel, onAction }: IOverlayPanelProps) => (
-  <div className="game-status-overlay">
-    <div className="game-over-panel">
-      <h1 className="game-over-title">{title}</h1>
-      <button type="button" className="game-restart-button" onClick={onAction}>
-        {actionLabel}
-      </button>
-    </div>
-  </div>
-);
-
 interface Props {
   level: ILevelConfig;
   onExit: () => void;
@@ -113,7 +96,9 @@ export const GameCanvas = ({ level, onExit }: Props) => {
       ? (Math.max(0, hud.health) / hud.maxHealth) * UNITS.PERCENT
       : 0;
   const isPaused = hud.isPaused && !hud.isGameOver;
-  const isHudVisible = !isLoading && !hasFailed && !isPaused;
+  const isGameOverScreen = !isLoading && !hasFailed && hud.isGameOver;
+  const isHudVisible =
+    !isLoading && !hasFailed && !isPaused && !hud.isGameOver;
   return (
     <div className="game-canvas-container">
       <div className="game-mount" ref={mountRef} />
@@ -180,12 +165,32 @@ export const GameCanvas = ({ level, onExit }: Props) => {
         </div>
       )}
 
-      {isHudVisible && hud.isGameOver && (
-        <OverlayPanel
-          title={HUD_TEXT.GAME_OVER_TITLE}
-          actionLabel={HUD_TEXT.RETRY}
-          onAction={() => gameRef.current?.restart()}
-        />
+      {isGameOverScreen && (
+        <div className="game-over-screen">
+          <button
+            type="button"
+            className="game-over-retry"
+            onClick={() => gameRef.current?.restart()}
+          >
+            <span className="game-over-kicker">{HUD_TEXT.GAME_OVER_KICKER}</span>
+            <span className="game-over-title">{HUD_TEXT.GAME_OVER_TITLE}</span>
+            <span className="game-over-stats">
+              <span className="game-over-stat">
+                <span className="game-over-stat-value">{hud.score}</span>
+                <span className="game-over-stat-label">{HUD_TEXT.SCORE_UNIT}</span>
+              </span>
+              <span className="game-over-stat-divider" aria-hidden="true" />
+              <span className="game-over-stat">
+                <span className="game-over-stat-value">{bestScore}</span>
+                <span className="game-over-stat-label">{HUD_TEXT.BEST_SCORE}</span>
+              </span>
+            </span>
+            <span className="game-over-hint">{HUD_TEXT.GAME_OVER_HINT}</span>
+          </button>
+          <button type="button" className="pause-screen-home" onClick={onExit}>
+            {HUD_TEXT.HOME}
+          </button>
+        </div>
       )}
     </div>
   );

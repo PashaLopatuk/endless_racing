@@ -9,7 +9,9 @@ export const HUD_TEXT = {
   HOME: "Home",
   PAUSED_TITLE: "Race paused",
   PAUSED_HINT: "Tap to resume",
-  GAME_OVER_TITLE: "Game over",
-  RETRY: "Retry",
+  GAME_OVER_KICKER: "APEX // RUN TERMINATED",
+  GAME_OVER_TITLE: "Wrecked",
+  GAME_OVER_HINT: "Tap to race again",
+  RETRY: "Race again",
   TOUCH_HINT: "Drag the lower half of the screen. Sideways steers, up and down sets speed.",
 } as const;

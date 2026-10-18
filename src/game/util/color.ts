@@ -59,6 +59,22 @@ export const mixHex = (from: number, to: number, amount: number): number => {
 };
 
 /** Same `pow(channel, gamma)` the frame grade uses, applied to one paint color. */
+/** Warm yellow DRL tint; hue/sat/light jitter keeps NPC fleets from looking identical. */
+const DAY_RUNNING_LIGHT_BASE = 0xffd54a;
+const DAY_RUNNING_LIGHT_SPREAD = {
+  HUE: 0.055,
+  SATURATION: 0.14,
+  LIGHTNESS: 0.1,
+} as const;
+
+export const randomDayRunningLightHex = (random: Rng): number => {
+  return randomizeWith(
+    DAY_RUNNING_LIGHT_BASE,
+    random,
+    DAY_RUNNING_LIGHT_SPREAD,
+  );
+};
+
 export const applyOutputGamma = (hex: number, gamma: number): number => {
   scratch.setHex(hex);
   scratch.r = Math.pow(scratch.r, gamma);

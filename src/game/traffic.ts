@@ -9,14 +9,20 @@ import {
   TRAFFIC,
   type ITrafficSeed,
 } from "./constants/traffic";
+import {
+  NPC_TAIL_LAMP_STYLES,
+  VEHICLE_STYLE,
+  type VehicleKind,
+} from "./constants/vehicles";
 import { NPC_CAR_PALETTE } from "./levels/cars/palette";
-import type { ICarLevelConfig } from "./levels/types";
-import { applyOutputGamma } from "./util/color";
+import type { ICarLevelConfig, LevelSkyMode } from "./levels/types";
+import { applyOutputGamma, randomDayRunningLightHex } from "./util/color";
+import { PLAYER } from "./constants/player";
 import { CAR_Y, LANE, VEHICLE_HITBOX } from "./constants/world";
 import { VEHICLE_ACTIVE_COLLISION_TYPES } from "./physics";
-import { getLaneCenterX } from "./util/lane";
-import { randomRange } from "./util/math";
-import { pick } from "./util/random";
+import { getLaneCenterX, getNearestLaneIndex } from "./util/lane";
+import { clamp, randomRange } from "./util/math";
+import { createRng, pick, randomIn } from "./util/random";
 
 export interface INpcCar {
   readonly id: number;
@@ -37,7 +43,13 @@ export interface IImpulse {
 }
 
 export interface ITraffic {
-  update(playerSpeed: number, dt: number, allowSpawn: boolean): void;
+  update(
+    playerSpeed: number,
+    playerWorldZ: number,
+    playerWorldX: number,
+    dt: number,
+    allowSpawn: boolean,
+  ): void;
   getWorldPosition(id: number): IWorldPosition | undefined;
   queueImpulse(id: number, impulse: IImpulse): void;
   /** Pushes simulated NPC poses into Rapier for the upcoming step. */
@@ -52,18 +64,27 @@ export interface ITraffic {
 interface INpcSlot {
   readonly id: number;
   readonly body: RAPIER.RigidBody;
-  readonly model: IVehicleModel;
+  model: IVehicleModel;
   lane: number;
   cruiseSpeed: number;
   worldX: number;
   worldZ: number;
   lateralVelocity: number;
+  laneChangeTarget: number | null;
+  laneChangeCooldown: number;
   isActive: boolean;
 }
 
-interface INpcPlacement extends ITrafficSeed {
-  paint: number;
+interface INpcLampLook {
+  tailLampStyleId: number;
+  headLampColor: number;
+  rearDayLampColor?: number;
   lampBrightness: number;
+}
+
+interface INpcPlacement extends ITrafficSeed, INpcLampLook {
+  kind: VehicleKind;
+  paint: number;
 }
 
 const parkingSpot = (id: number) => ({
@@ -101,11 +122,67 @@ const createNpcBody = (world: RAPIER.World, id: number): RAPIER.RigidBody => {
   return body;
 };
 
-const gradeCarPaint = (index: number, outputGamma: number): number =>
-  applyOutputGamma(
-    NPC_CAR_PALETTE[index % NPC_CAR_PALETTE.length],
-    outputGamma,
+const pickNpcPaint = (outputGamma: number): number =>
+  applyOutputGamma(pick(Math.random, [...NPC_CAR_PALETTE]), outputGamma);
+
+const pickNpcKind = (kinds: readonly VehicleKind[]): VehicleKind =>
+  pick(Math.random, [...kinds]);
+
+const pickNpcCruiseSpeed = (
+  cars: ICarLevelConfig,
+  seed: number,
+): number => {
+  const random = createRng(seed ^ 0x5a5a);
+  const mid = (cars.minSpeed + cars.maxSpeed) * 0.5;
+
+  return clamp(
+    mid + randomIn(random, [-TRAFFIC.CRUISE_JITTER, TRAFFIC.CRUISE_JITTER]),
+    cars.minSpeed,
+    cars.maxSpeed,
   );
+};
+
+const isFarAheadSpawnZ = (playerWorldZ: number, z: number): boolean =>
+  z >= playerWorldZ + TRAFFIC.SPAWN_AHEAD_MIN &&
+  z <= playerWorldZ + TRAFFIC.FILL_AHEAD_MAX;
+
+const gridZForBin = (
+  playerWorldZ: number,
+  lane: number,
+  bin: number,
+): number =>
+  playerWorldZ +
+  TRAFFIC.SPAWN_AHEAD_MIN +
+  lane * TRAFFIC.LANE_GRID_OFFSET +
+  bin * TRAFFIC.TARGET_GRID_SPACING;
+
+const pickNpcTailLampStyleId = (): number =>
+  Math.floor(Math.random() * NPC_TAIL_LAMP_STYLES.length);
+
+const pickNpcLampLook = (skyMode: LevelSkyMode): INpcLampLook => {
+  const isDay = skyMode === "day";
+  const rearYellow = randomDayRunningLightHex(Math.random);
+
+  return {
+    tailLampStyleId: pickNpcTailLampStyleId(),
+    headLampColor: isDay ? rearYellow : VEHICLE_STYLE.LAMP_COLOR.HEAD,
+    rearDayLampColor: rearYellow,
+    lampBrightness: isDay
+      ? randomRange(
+          TRAFFIC.DAY_LAMP_BRIGHTNESS_MIN,
+          TRAFFIC.DAY_LAMP_BRIGHTNESS_MAX,
+        )
+      : randomRange(TRAFFIC.LAMP_BRIGHTNESS_MIN, TRAFFIC.LAMP_BRIGHTNESS_MAX),
+  };
+};
+
+const lampLookFromPlacement = (look: INpcLampLook) => ({
+  tailLampStyle: NPC_TAIL_LAMP_STYLES[look.tailLampStyleId],
+  headLampColor: look.headLampColor,
+  rearDayLampColor: look.rearDayLampColor,
+  tailLampStyleId: look.tailLampStyleId,
+  lampBrightness: look.lampBrightness,
+});
 
 const createNpcSlot = (
   world: RAPIER.World,
@@ -113,14 +190,17 @@ const createNpcSlot = (
   index: number,
   cars: ICarLevelConfig,
   outputGamma: number,
+  skyMode: LevelSkyMode,
 ): INpcSlot => {
   const id = TRAFFIC.FIRST_ID + index;
 
+  const lampLook = pickNpcLampLook(skyMode);
+
   const model = createVehicleModel({
-    kind: cars.kinds[index % cars.kinds.length],
-    paint: gradeCarPaint(index, outputGamma),
-    lampBrightness: Math.max(TRAFFIC.LAMP_BRIGHTNESS_MIN, 1.35),
+    kind: pickNpcKind(cars.kinds),
+    paint: pickNpcPaint(outputGamma),
     hasSpotlights: false,
+    ...lampLookFromPlacement(lampLook),
   });
 
   const spot = parkingSpot(id);
@@ -137,6 +217,8 @@ const createNpcSlot = (
     worldX: spot.x,
     worldZ: spot.z,
     lateralVelocity: 0,
+    laneChangeTarget: null,
+    laneChangeCooldown: 0,
     isActive: false,
   };
 };
@@ -149,20 +231,285 @@ const pushSlotPose = (slot: INpcSlot) => {
   });
 };
 
+const replaceSlotModel = (
+  slot: INpcSlot,
+  scene: THREE.Scene,
+  placement: Pick<
+    INpcPlacement,
+    | "kind"
+    | "paint"
+    | "tailLampStyleId"
+    | "headLampColor"
+    | "rearDayLampColor"
+    | "lampBrightness"
+  >,
+) => {
+  const previousPosition = slot.model.object.position.clone();
+
+  slot.model.dispose();
+
+  slot.model = createVehicleModel({
+    kind: placement.kind,
+    paint: placement.paint,
+    hasSpotlights: false,
+    ...lampLookFromPlacement(placement),
+  });
+
+  slot.model.object.position.copy(previousPosition);
+  scene.add(slot.model.object);
+};
+
+const applySlotAppearance = (
+  slot: INpcSlot,
+  scene: THREE.Scene,
+  placement: Pick<
+    INpcPlacement,
+    | "kind"
+    | "paint"
+    | "tailLampStyleId"
+    | "headLampColor"
+    | "rearDayLampColor"
+    | "lampBrightness"
+  >,
+) => {
+  const tailStyle = NPC_TAIL_LAMP_STYLES[placement.tailLampStyleId];
+  const wantsRearDayLamps = placement.rearDayLampColor !== undefined;
+
+  if (
+    slot.model.kind !== placement.kind ||
+    slot.model.tailLampStyleId !== placement.tailLampStyleId ||
+    slot.model.hasRearDayLamps !== wantsRearDayLamps
+  ) {
+    replaceSlotModel(slot, scene, placement);
+
+    return;
+  }
+
+  slot.model.setPaint(placement.paint);
+  slot.model.setLampColors(
+    tailStyle.color,
+    placement.headLampColor,
+    placement.rearDayLampColor,
+  );
+  slot.model.setLampBrightness(placement.lampBrightness);
+};
+
 const activateSlot = (
   slot: INpcSlot,
-  { lane, z, cruiseSpeed, paint, lampBrightness }: INpcPlacement,
+  scene: THREE.Scene,
+  placement: INpcPlacement,
 ) => {
+  const { lane, z, cruiseSpeed } = placement;
+
+  applySlotAppearance(slot, scene, placement);
+
   slot.lane = lane;
   slot.cruiseSpeed = cruiseSpeed;
   slot.isActive = true;
   slot.lateralVelocity = 0;
-  slot.model.setPaint(paint);
-  slot.model.setLampBrightness(lampBrightness);
+  slot.laneChangeTarget = null;
+  slot.laneChangeCooldown = 0;
   slot.body.setEnabled(true);
   slot.worldX = getLaneCenterX(lane);
   slot.worldZ = z;
   slot.body.setTranslation({ x: slot.worldX, y: CAR_Y, z: slot.worldZ }, true);
+};
+
+const isLaneZFreeInPlacements = (
+  placements: readonly ITrafficSeed[],
+  lane: number,
+  candidateZ: number,
+  isClear: (lane: number, z: number) => boolean,
+): boolean => {
+  if (!isClear(lane, candidateZ)) {
+    return false;
+  }
+
+  return placements.every(
+    (placement) =>
+      placement.lane !== lane ||
+      Math.abs(placement.z - candidateZ) >= TRAFFIC.MIN_LANE_GAP,
+  );
+};
+
+const countLanesAtSliceInPlacements = (
+  placements: readonly ITrafficSeed[],
+  z: number,
+): number => {
+  const occupied = new Set<number>();
+
+  for (const placement of placements) {
+    if (Math.abs(placement.z - z) < TRAFFIC.Z_SLICE_HALF) {
+      occupied.add(placement.lane);
+    }
+  }
+
+  return occupied.size;
+};
+
+/** Fill the ahead window on a staggered per-lane grid. */
+const buildGridInitialTraffic = (
+  cars: ICarLevelConfig,
+  isClear: (lane: number, z: number) => boolean,
+  playerWorldZ: number,
+): ITrafficSeed[] => {
+  const placements: ITrafficSeed[] = [];
+  const zMax = playerWorldZ + TRAFFIC.FILL_AHEAD_MAX;
+  const binCount = Math.max(
+    1,
+    Math.ceil(
+      (TRAFFIC.FILL_AHEAD_MAX - TRAFFIC.SPAWN_AHEAD_MIN) /
+        TRAFFIC.TARGET_GRID_SPACING,
+    ),
+  );
+
+  for (let lane = 0; lane < LANE.COUNT; lane += 1) {
+    for (let bin = 0; bin < binCount; bin += 1) {
+      const z = gridZForBin(playerWorldZ, lane, bin);
+
+      if (z > zMax || !isFarAheadSpawnZ(playerWorldZ, z)) {
+        continue;
+      }
+
+      const initialFillRoll =
+        ((lane * 7919 + bin * 104729) % 1000) / 1000;
+
+      if (initialFillRoll > TRAFFIC.INITIAL_GRID_FILL_RATIO) {
+        continue;
+      }
+
+      if (
+        countLanesAtSliceInPlacements(placements, z) >=
+        LANE.COUNT - TRAFFIC.MIN_FREE_LANES
+      ) {
+        continue;
+      }
+
+      if (!isLaneZFreeInPlacements(placements, lane, z, isClear)) {
+        continue;
+      }
+
+      placements.push({
+        lane,
+        z,
+        cruiseSpeed: pickNpcCruiseSpeed(cars, lane * 997 + Math.floor(z)),
+      });
+    }
+  }
+
+  return placements;
+};
+
+const NPC_LENGTH = VEHICLE_HITBOX.HALF_LENGTH * 2;
+
+const getNpcClosingSpeed = (
+  cruiseSpeed: number,
+  playerSpeed: number,
+): number =>
+  Math.max(TRAFFIC.MIN_CLOSING_SPEED, playerSpeed - cruiseSpeed);
+
+/** Positive when the follower is catching a lead car ahead (+Z). */
+const getCatchUpSpeed = (
+  followerCruise: number,
+  leadCruise: number,
+  playerSpeed: number,
+): number => {
+  const followerZRate = -getNpcClosingSpeed(followerCruise, playerSpeed);
+  const leadZRate = -getNpcClosingSpeed(leadCruise, playerSpeed);
+
+  return followerZRate - leadZRate;
+};
+
+const blendFollowCruise = (
+  cruiseSpeed: number,
+  bumperGap: number,
+  leadCruise: number,
+): number => {
+  const { FOLLOW_LOOKAHEAD, FOLLOW_MIN_GAP, FOLLOW_BACKOFF, MIN_SPEED } =
+    TRAFFIC;
+
+  if (bumperGap >= FOLLOW_LOOKAHEAD) {
+    return cruiseSpeed;
+  }
+
+  let target = Math.min(cruiseSpeed, leadCruise);
+
+  if (bumperGap < FOLLOW_MIN_GAP) {
+    target = Math.max(MIN_SPEED, leadCruise - FOLLOW_BACKOFF);
+  }
+
+  const blend = clamp(1 - bumperGap / FOLLOW_LOOKAHEAD, 0, 1);
+
+  return cruiseSpeed + (target - cruiseSpeed) * blend;
+};
+
+const resolveFollowCruiseSpeed = (
+  slot: INpcSlot,
+  slots: readonly INpcSlot[],
+): number => {
+  const lead = findLeadNpcIn(slot, slots);
+
+  if (!lead) {
+    return slot.cruiseSpeed;
+  }
+
+  const bumperGap = lead.worldZ - slot.worldZ - NPC_LENGTH;
+
+  return blendFollowCruise(slot.cruiseSpeed, bumperGap, lead.cruiseSpeed);
+};
+
+const findLeadNpcIn = (
+  slot: INpcSlot,
+  slots: readonly INpcSlot[],
+): INpcSlot | null => {
+  let lead: INpcSlot | null = null;
+  let leadGap = Number.POSITIVE_INFINITY;
+
+  for (const other of slots) {
+    if (!other.isActive || other.id === slot.id) {
+      continue;
+    }
+
+    if (other.lane !== slot.lane) {
+      continue;
+    }
+
+    const gap = other.worldZ - slot.worldZ;
+
+    if (gap <= 0.5 || gap >= leadGap) {
+      continue;
+    }
+
+    lead = other;
+    leadGap = gap;
+  }
+
+  return lead;
+};
+
+const getPlayerSpeedRatio = (playerSpeed: number): number =>
+  clamp(
+    (playerSpeed - PLAYER.MIN_SPEED) / (PLAYER.MAX_SPEED - PLAYER.MIN_SPEED),
+    0,
+    1,
+  );
+
+const getMaxActiveForPlayerSpeed = (playerSpeed: number): number => {
+  const ratio = getPlayerSpeedRatio(playerSpeed);
+
+  return Math.round(
+    TRAFFIC.MAX_ACTIVE_SLOW +
+      ratio * (TRAFFIC.MAX_ACTIVE - TRAFFIC.MAX_ACTIVE_SLOW),
+  );
+};
+
+const getSpawnIntervalScale = (playerSpeed: number): number => {
+  const ratio = getPlayerSpeedRatio(playerSpeed);
+
+  return (
+    TRAFFIC.SPAWN_INTERVAL_SLOW_SCALE -
+    ratio * (TRAFFIC.SPAWN_INTERVAL_SLOW_SCALE - 1)
+  );
 };
 
 const parkSlot = (slot: INpcSlot) => {
@@ -170,6 +517,8 @@ const parkSlot = (slot: INpcSlot) => {
 
   slot.isActive = false;
   slot.lateralVelocity = 0;
+  slot.laneChangeTarget = null;
+  slot.laneChangeCooldown = 0;
   slot.body.setEnabled(false);
   slot.worldX = spot.x;
   slot.worldZ = spot.z;
@@ -182,19 +531,36 @@ export const createTraffic = (
   scene: THREE.Scene,
   cars: ICarLevelConfig,
   outputGamma: number,
+  skyMode: LevelSkyMode = "night",
 ): ITraffic => {
   const slots = Array.from({ length: TRAFFIC.POOL_SIZE }, (_, index) =>
-    createNpcSlot(world, scene, index, cars, outputGamma),
+    createNpcSlot(world, scene, index, cars, outputGamma, skyMode),
   );
   const slotsById = new Map(slots.map((slot) => [slot.id, slot]));
   const parkedScratch: INpcSlot[] = [];
-  const openLanesScratch: number[] = [];
-  const bandLanes = new Array<boolean>(LANE.COUNT).fill(false);
-  const blockedLanes = new Array<boolean>(LANE.COUNT).fill(false);
   const pendingImpulses = new Map<number, IImpulse>();
 
   let activeCount = 0;
   let spawnTimer: number = TRAFFIC.INITIAL_SPAWN_DELAY;
+  let gapFillCursor = 0;
+
+  const isSpawnPositionClear = (lane: number, z: number): boolean => {
+    for (const slot of slots) {
+      if (!slot.isActive) {
+        continue;
+      }
+
+      if (slot.lane !== lane) {
+        continue;
+      }
+
+      if (Math.abs(slot.worldZ - z) < TRAFFIC.MIN_LANE_GAP) {
+        return false;
+      }
+    }
+
+    return true;
+  };
 
   const takeParkedSlot = (): INpcSlot | null => {
     parkedScratch.length = 0;
@@ -206,24 +572,31 @@ export const createTraffic = (
     return parkedScratch.length > 0 ? pick(Math.random, parkedScratch) : null;
   };
 
-  const spawn = (seed: ITrafficSeed) => {
-    const slot = takeParkedSlot();
-    if (!slot) {
-      return;
+  const spawn = (seed: ITrafficSeed): boolean => {
+    if (!isFarAheadSpawnZ(playerWorldZ, seed.z)) {
+      return false;
     }
 
-    const paint = gradeCarPaint(slot.id, outputGamma);
+    if (!isSpawnPositionClear(seed.lane, seed.z)) {
+      return false;
+    }
 
-    activateSlot(slot, {
+    const slot = takeParkedSlot();
+
+    if (!slot) {
+      return false;
+    }
+
+    activateSlot(slot, scene, {
       ...seed,
-      paint,
-      lampBrightness: randomRange(
-        TRAFFIC.LAMP_BRIGHTNESS_MIN,
-        TRAFFIC.LAMP_BRIGHTNESS_MAX,
-      ),
+      kind: pickNpcKind(cars.kinds),
+      paint: pickNpcPaint(outputGamma),
+      ...pickNpcLampLook(skyMode),
     });
 
     activeCount += 1;
+
+    return true;
   };
 
   const despawn = (slot: INpcSlot) => {
@@ -242,71 +615,301 @@ export const createTraffic = (
     slot.worldZ += impulse.z * 0.04;
   };
 
+  const isLaneOpenAt = (
+    lane: number,
+    z: number,
+    ignoreId: number,
+  ): boolean => {
+    for (const other of slots) {
+      if (!other.isActive || other.id === ignoreId) {
+        continue;
+      }
+
+      if (other.lane !== lane) {
+        continue;
+      }
+
+      if (Math.abs(other.worldZ - z) < TRAFFIC.MIN_LANE_GAP) {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const findLeadNpc = (slot: INpcSlot): INpcSlot | null =>
+    findLeadNpcIn(slot, slots);
+
+  let playerWorldZ = 0;
+  let playerWorldX = getLaneCenterX(PLAYER.START_LANE);
+  let playerLane = PLAYER.START_LANE;
+
+  const pickEscapeLane = (slot: INpcSlot): number | null => {
+    const candidates: number[] = [];
+
+    for (const offset of [-1, 1]) {
+      const lane = slot.lane + offset;
+
+      if (lane < 0 || lane >= LANE.COUNT) {
+        continue;
+      }
+
+      if (isLaneOpenAt(lane, slot.worldZ, slot.id)) {
+        candidates.push(lane);
+      }
+    }
+
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    if (candidates.length === 1) {
+      return candidates[0];
+    }
+
+    return pick(Math.random, candidates);
+  };
+
+  const considerLaneChange = (slot: INpcSlot, playerSpeed: number) => {
+    if (slot.laneChangeTarget !== null || slot.laneChangeCooldown > 0) {
+      return;
+    }
+
+    const lead = findLeadNpc(slot);
+
+    if (!lead) {
+      return;
+    }
+
+    const followCruise = resolveFollowCruiseSpeed(slot, slots);
+    const catchUp = getCatchUpSpeed(followCruise, lead.cruiseSpeed, playerSpeed);
+
+    if (catchUp <= 0.05) {
+      return;
+    }
+
+    const bumperGap = lead.worldZ - slot.worldZ - NPC_LENGTH;
+
+    if (bumperGap > TRAFFIC.LANE_CHANGE_LOOKAHEAD) {
+      return;
+    }
+
+    const timeToContact = bumperGap / catchUp;
+
+    if (
+      bumperGap > TRAFFIC.MIN_LANE_GAP &&
+      timeToContact > TRAFFIC.LANE_CHANGE_REACTION_TIME
+    ) {
+      return;
+    }
+
+    if (Math.random() > TRAFFIC.LANE_CHANGE_CHANCE) {
+      return;
+    }
+
+    const escapeLane = pickEscapeLane(slot);
+
+    if (escapeLane === null) {
+      return;
+    }
+
+    slot.laneChangeTarget = escapeLane;
+  };
+
+  const applyLaneChangeMotion = (slot: INpcSlot, dt: number) => {
+    if (slot.laneChangeTarget === null) {
+      return;
+    }
+
+    const targetX = getLaneCenterX(slot.laneChangeTarget);
+    const deltaX = targetX - slot.worldX;
+    const step = TRAFFIC.LANE_CHANGE_SPEED * dt;
+
+    if (Math.abs(deltaX) <= step) {
+      slot.worldX = targetX;
+      slot.lane = slot.laneChangeTarget;
+      slot.laneChangeTarget = null;
+      slot.laneChangeCooldown = TRAFFIC.LANE_CHANGE_COOLDOWN;
+      slot.lateralVelocity = 0;
+
+      return;
+    }
+
+    slot.worldX += Math.sign(deltaX) * step;
+    slot.lateralVelocity = 0;
+  };
+
   const advanceSlot = (slot: INpcSlot, playerSpeed: number, dt: number) => {
     applyPendingImpulses(slot);
 
-    const closing = Math.max(
-      TRAFFIC.MIN_CLOSING_SPEED,
-      playerSpeed - slot.cruiseSpeed,
-    );
+    if (slot.laneChangeCooldown > 0) {
+      slot.laneChangeCooldown = Math.max(0, slot.laneChangeCooldown - dt);
+    }
+
+    considerLaneChange(slot, playerSpeed);
+    applyLaneChangeMotion(slot, dt);
+
+    const followCruise = resolveFollowCruiseSpeed(slot, slots);
+    const closing = getNpcClosingSpeed(followCruise, playerSpeed);
 
     slot.worldZ -= closing * dt;
-    slot.lateralVelocity *= TRAFFIC.LATERAL_DAMPING;
-    slot.worldX += slot.lateralVelocity * dt;
+
+    if (slot.laneChangeTarget === null) {
+      slot.lateralVelocity *= TRAFFIC.LATERAL_DAMPING;
+      slot.worldX += slot.lateralVelocity * dt;
+    }
   };
 
-  /** Lanes where a car may appear at `z`, keeping at least `MIN_FREE_LANES` lanes clear across the band. */
-  const collectOpenLanes = (z: number): readonly number[] => {
-    bandLanes.fill(false);
-    blockedLanes.fill(false);
-    openLanesScratch.length = 0;
+  const countLanesAtSlice = (z: number): number => {
+    const occupied = new Set<number>();
 
     for (const slot of slots) {
       if (!slot.isActive) {
         continue;
       }
-      const distance = Math.abs(slot.worldZ - z);
-      bandLanes[slot.lane] ||= distance < TRAFFIC.SPAWN_BAND;
-      blockedLanes[slot.lane] ||= distance < TRAFFIC.MIN_LANE_GAP;
-    }
 
-    const bandCount = bandLanes.filter(Boolean).length;
-
-    if (bandCount >= LANE.COUNT - TRAFFIC.MIN_FREE_LANES) {
-      return openLanesScratch;
-    }
-
-    for (let lane = 0; lane < LANE.COUNT; lane += 1) {
-      if (!bandLanes[lane] && !blockedLanes[lane]) {
-        openLanesScratch.push(lane);
+      if (Math.abs(slot.worldZ - z) < TRAFFIC.Z_SLICE_HALF) {
+        occupied.add(slot.lane);
       }
     }
 
-    return openLanesScratch;
+    return occupied.size;
   };
 
-  const trySpawnAhead = () => {
-    if (activeCount >= TRAFFIC.MAX_ACTIVE) {
-      return;
+  const isGridCellOpen = (lane: number, z: number): boolean => {
+    for (const slot of slots) {
+      if (!slot.isActive || slot.lane !== lane) {
+        continue;
+      }
+
+      if (Math.abs(slot.worldZ - z) < TRAFFIC.GRID_OCCUPY_RADIUS) {
+        return false;
+      }
     }
 
-    const z = TRAFFIC.SPAWN_Z + randomRange(0, TRAFFIC.SPAWN_Z_RANDOMIZE);
-    const openLanes = collectOpenLanes(z);
+    return isSpawnPositionClear(lane, z);
+  };
 
-    if (openLanes.length === 0) {
-      return;
+  const canSpawnOnGrid = (lane: number, z: number): boolean => {
+    if (!isFarAheadSpawnZ(playerWorldZ, z)) {
+      return false;
     }
 
-    spawn({
-      lane: pick(Math.random, openLanes),
-      z,
-      cruiseSpeed: randomRange(cars.minSpeed, cars.maxSpeed),
-    });
+    if (!isGridCellOpen(lane, z)) {
+      return false;
+    }
+
+    if (
+      countLanesAtSlice(z) >= LANE.COUNT - TRAFFIC.MIN_FREE_LANES
+    ) {
+      return false;
+    }
+
+    const nearPlayer =
+      z <= playerWorldZ + TRAFFIC.PLAYER_CLEARANCE_AHEAD &&
+      z >= playerWorldZ - TRAFFIC.PLAYER_CLEARANCE_BEHIND;
+
+    if (
+      nearPlayer &&
+      lane === playerLane &&
+      countLanesAtSlice(z) >= LANE.COUNT - 2
+    ) {
+      return false;
+    }
+
+    return true;
+  };
+
+  const getGapFillSlotCount = (): number => {
+    const binCount = Math.max(
+      1,
+      Math.ceil(
+        (TRAFFIC.FILL_AHEAD_MAX - TRAFFIC.SPAWN_AHEAD_MIN) /
+          TRAFFIC.TARGET_GRID_SPACING,
+      ),
+    );
+
+    return binCount * LANE.COUNT;
+  };
+
+  const findGapFillPlacement = (): Omit<
+    INpcPlacement,
+    | "paint"
+    | "tailLampStyleId"
+    | "headLampColor"
+    | "rearDayLampColor"
+    | "lampBrightness"
+  > | null => {
+    const slotCount = getGapFillSlotCount();
+    const zMax = playerWorldZ + TRAFFIC.FILL_AHEAD_MAX;
+    const binCount = slotCount / LANE.COUNT;
+
+    for (let attempt = 0; attempt < slotCount; attempt += 1) {
+      const slotIndex = (gapFillCursor + attempt) % slotCount;
+      const lane = slotIndex % LANE.COUNT;
+      const bin = Math.floor(slotIndex / LANE.COUNT);
+      const z = gridZForBin(playerWorldZ, lane, bin);
+
+      if (z > zMax || !isFarAheadSpawnZ(playerWorldZ, z)) {
+        continue;
+      }
+
+      if (!canSpawnOnGrid(lane, z)) {
+        continue;
+      }
+
+      gapFillCursor = (slotIndex + 1) % slotCount;
+
+      return {
+        kind: pickNpcKind(cars.kinds),
+        lane,
+        z,
+        cruiseSpeed: pickNpcCruiseSpeed(cars, slotIndex + Math.floor(z)),
+      };
+    }
+
+    return null;
+  };
+
+  const trySpawnAhead = (playerSpeed: number) => {
+    const maxActive = getMaxActiveForPlayerSpeed(playerSpeed);
+
+    for (
+      let spawnAttempt = 0;
+      spawnAttempt < TRAFFIC.SPAWNS_PER_TICK &&
+      activeCount < maxActive;
+      spawnAttempt += 1
+    ) {
+      const placement = findGapFillPlacement();
+
+      if (!placement) {
+        break;
+      }
+
+      spawn(placement);
+    }
   };
 
   const seedInitial = () => {
     slots.filter((slot) => slot.isActive).forEach(despawn);
-    cars.initialTraffic.forEach(spawn);
+
+    gapFillCursor = 0;
+
+    const initialPlacements = buildGridInitialTraffic(
+      cars,
+      isSpawnPositionClear,
+      playerWorldZ,
+    );
+
+    for (const seed of initialPlacements) {
+      if (!spawn(seed)) {
+        spawn({
+          ...seed,
+          z: seed.z + TRAFFIC.MIN_LANE_GAP,
+        });
+      }
+    }
+
     spawnTimer = TRAFFIC.INITIAL_SPAWN_DELAY;
   };
 
@@ -323,7 +926,11 @@ export const createTraffic = (
   };
 
   return {
-    update: (playerSpeed, dt, allowSpawn) => {
+    update: (playerSpeed, nextPlayerWorldZ, nextPlayerWorldX, dt, allowSpawn) => {
+      playerWorldZ = nextPlayerWorldZ;
+      playerWorldX = nextPlayerWorldX;
+      playerLane = getNearestLaneIndex(playerWorldX);
+
       for (const slot of slots) {
         if (!slot.isActive) {
           continue;
@@ -350,11 +957,13 @@ export const createTraffic = (
         return;
       }
 
-      trySpawnAhead();
+      trySpawnAhead(playerSpeed);
+
+      const intervalScale = getSpawnIntervalScale(playerSpeed);
 
       spawnTimer = randomRange(
-        TRAFFIC.SPAWN_INTERVAL_MIN,
-        TRAFFIC.SPAWN_INTERVAL_MAX,
+        TRAFFIC.SPAWN_INTERVAL_MIN * intervalScale,
+        TRAFFIC.SPAWN_INTERVAL_MAX * intervalScale,
       );
     },
     getWorldPosition: (id) => {

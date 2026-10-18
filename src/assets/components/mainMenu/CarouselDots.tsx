@@ -4,7 +4,12 @@ interface Props {
   onSelect: (index: number) => void;
 }
 
-export const CarouselDots = ({ count, activeIndex, onSelect }: Props) => (
+export const CarouselDots = ({ count, activeIndex, onSelect }: Props) => {
+  if (count <= 1) {
+    return null;
+  }
+
+  return (
   <div className="carousel-dots">
     {Array.from({ length: count }, (_, index) => (
       <button
@@ -20,4 +25,5 @@ export const CarouselDots = ({ count, activeIndex, onSelect }: Props) => (
       />
     ))}
   </div>
-);
+  );
+};

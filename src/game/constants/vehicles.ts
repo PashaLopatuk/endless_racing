@@ -6,6 +6,8 @@ export const VEHICLES_SIZE_RATIO = 1.2;
 export const VEHICLE_KIND = {
   SEDAN: "sedan",
   HATCHBACK: "hatchback",
+  WAGON: "wagon",
+  CROSSOVER: "crossover",
   VAN: "van",
   PICKUP: "pickup",
   TAXI: "taxi",
@@ -133,27 +135,123 @@ export const VEHICLE_BLUEPRINTS: Readonly<
       halfSpan: 0.5,
     },
   },
+  [VEHICLE_KIND.WAGON]: {
+    parts: [
+      {
+        role: VEHICLE_PART_ROLE.PAINT,
+        size: [1.72, 0.5, 3.48],
+        radius: 0.12,
+        position: [0, -0.02, 0],
+      },
+      {
+        role: VEHICLE_PART_ROLE.GLASS,
+        size: [1.46, 0.42, 1.48],
+        radius: 0.11,
+        position: [0, 0.36, 0.42],
+      },
+      {
+        role: VEHICLE_PART_ROLE.GLASS,
+        size: [1.44, 0.36, 1.05],
+        radius: 0.08,
+        position: [0, 0.38, -1.12],
+      },
+      {
+        role: VEHICLE_PART_ROLE.TRIM,
+        size: [1.5, 0.06, 3.18],
+        radius: 0.03,
+        position: [0, 0.52, -0.08],
+      },
+    ],
+    wheels: SEDAN_WHEELS,
+    lamps: {
+      tailY: 0.1,
+      tailZ: -1.72,
+      headY: 0.08,
+      headZ: 1.6,
+      halfSpan: 0.52,
+    },
+  },
+  [VEHICLE_KIND.CROSSOVER]: {
+    parts: [
+      {
+        role: VEHICLE_PART_ROLE.PAINT,
+        size: [1.82, 0.58, 3.1],
+        radius: 0.14,
+        position: [0, 0.06, 0],
+      },
+      {
+        role: VEHICLE_PART_ROLE.GLASS,
+        size: [1.54, 0.46, 1.72],
+        radius: 0.12,
+        position: [0, 0.44, -0.04],
+      },
+      {
+        role: VEHICLE_PART_ROLE.TRIM,
+        size: [1.84, 0.2, 2.95],
+        radius: 0.06,
+        position: [0, -0.2, 0.02],
+      },
+    ],
+    wheels: { frontZ: 1.08, rearZ: -1.06, halfTrack: 0.76 },
+    lamps: {
+      tailY: 0.14,
+      tailZ: -1.54,
+      headY: 0.12,
+      headZ: 1.56,
+      halfSpan: 0.54,
+    },
+  },
   [VEHICLE_KIND.VAN]: {
     parts: [
       {
         role: VEHICLE_PART_ROLE.PAINT,
-        size: [1.78, 0.92, 3.25],
-        radius: 0.12,
-        position: [0, 0.22, 0],
+        size: [1.7, 0.48, 1.44],
+        radius: 0.1,
+        position: [0, 0.02, 1.24],
       },
       {
         role: VEHICLE_PART_ROLE.GLASS,
-        size: [1.5, 0.42, 0.1],
+        size: [1.46, 0.36, 0.1],
+        radius: 0.04,
+        position: [0, 0.36, 1.68],
+      },
+      {
+        role: VEHICLE_PART_ROLE.PAINT,
+        size: [1.9, 1.38, 2.44],
+        radius: 0.05,
+        position: [0, 0.48, -0.8],
+      },
+      {
+        role: VEHICLE_PART_ROLE.PAINT,
+        size: [1.74, 0.24, 1.08],
+        radius: 0.06,
+        position: [0, 0.36, 0.5],
+      },
+      {
+        role: VEHICLE_PART_ROLE.TRIM,
+        size: [1.68, 0.12, 0.88],
+        radius: 0.04,
+        position: [0, 0.46, 0.32],
+      },
+      {
+        role: VEHICLE_PART_ROLE.TRIM,
+        size: [1.76, 0.2, 0.14],
+        radius: 0.04,
+        position: [0, -0.1, 1.94],
+      },
+      {
+        role: VEHICLE_PART_ROLE.TRIM,
+        size: [1.08, 0.34, 0.1],
         radius: 0.03,
-        position: [0, 0.48, 1.56],
+        position: [0, 0.06, 1.88],
       },
     ],
-    wheels: { frontZ: 1.05, rearZ: -1.05, halfTrack: 0.78 },
+    wheels: { frontZ: 1.24, rearZ: -1.4, halfTrack: 0.8 },
     lamps: {
-      tailY: 0.28,
-      tailZ: -1.6,
-      headY: 0.22,
-      headZ: 1.62,
+      tailY: 0.38,
+      tailZ: -2.04,
+      headY: 0.12,
+      headZ: 1.94,
       halfSpan: 0.58,
     },
   },
@@ -252,6 +350,62 @@ export const HEAD_LAMP_SHAPE: IRoundedShape = {
   radius: 0.04,
 };
 
+/** Rear amber / DRL segment under each red tail lamp (emissive skin only). */
+export const REAR_DAY_LAMP_SHAPE: IRoundedShape = {
+  size: [0.2, 0.1, 0.09],
+  radius: 0.028,
+};
+
+export const REAR_DAY_LAMP_LAYOUT = {
+  Y_OFFSET: -0.11,
+  Z_OFFSET: -0.025,
+} as const;
+
+/** Emissive tail meshes only — no extra lights. One style is picked per NPC spawn. */
+export interface INpcTailLampStyle {
+  readonly primary: IRoundedShape;
+  readonly accent?: {
+    readonly shape: IRoundedShape;
+    readonly offset: Vec3Tuple;
+  };
+  readonly color: number;
+}
+
+export const NPC_TAIL_LAMP_STYLES: readonly INpcTailLampStyle[] = [
+  {
+    primary: TAIL_LAMP_SHAPE,
+    color: 0xff2d2d,
+  },
+  {
+    primary: { size: [0.36, 0.11, 0.07], radius: 0.025 },
+    color: 0xff1f1f,
+  },
+  {
+    primary: { size: [0.2, 0.18, 0.08], radius: 0.03 },
+    color: 0xff3344,
+  },
+  {
+    primary: { size: [0.16, 0.12, 0.07], radius: 0.022 },
+    accent: {
+      shape: { size: [0.16, 0.12, 0.07], radius: 0.022 },
+      offset: [0, 0.1, 0],
+    },
+    color: 0xff2525,
+  },
+  {
+    primary: { size: [0.22, 0.1, 0.08], radius: 0.024 },
+    accent: {
+      shape: { size: [0.14, 0.08, 0.06], radius: 0.018 },
+      offset: [0, -0.09, 0.01],
+    },
+    color: 0xff4020,
+  },
+  {
+    primary: { size: [0.28, 0.08, 0.06], radius: 0.02 },
+    color: 0xff5555,
+  },
+] as const;
+
 export const VEHICLE_STYLE = {
   ROUNDED_SEGMENTS: 3,
   WHEEL: {
@@ -269,6 +423,7 @@ export const VEHICLE_STYLE = {
   LAMP: { ROUGHNESS: 0.32, METALNESS: 0 },
   LAMP_COLOR: { TAIL: 0xff2d2d, HEAD: 0xfff3cf, SIGN: 0xfff6d8 },
   HEAD_BRIGHTNESS: { MIN: 2.2, RATIO: 2.4 },
+  REAR_AMBER_BRIGHTNESS: { MIN: 1.45, RATIO: 1.2 },
   SIGN_BRIGHTNESS_MIN: 0.8,
 } as const;
 

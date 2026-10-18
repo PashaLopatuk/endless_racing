@@ -1,5 +1,4 @@
 import type { BuildingStyle } from "../constants/environment/buildings";
-import type { ITrafficSeed } from "../constants/traffic";
 import type { VehicleKind } from "../constants/vehicles";
 import type { IBuildingSet } from "./buildings/types";
 
@@ -38,12 +37,26 @@ export interface ILevelPalette {
   };
 }
 
+export interface ITerrainParkConfig {
+  /** Per building slot: near-road grass strip in front of the far building row. */
+  replaceBuildingChance: number;
+  /** Meters from the curb line to the park lot center (world |X|). */
+  nearInset: number;
+  grassColor: number;
+  grassAccentColor: number;
+  pathColor: number;
+  borderColor: number;
+  benchColor: number;
+  shrubColor: number;
+}
+
 export interface ITerrainConfig {
   groundColor: number;
   asphaltColor: number;
   sidewalkColor: number;
   edgeColor: number;
   dashColor: number;
+  park?: ITerrainParkConfig;
 }
 
 export interface IStreetConfig {
@@ -60,6 +73,8 @@ export interface IStreetRows {
     SPACING: number;
     START_Z: number;
     GAP: number;
+    /** Extra offset from the house row so the skyline sits behind near-road parks. */
+    FAR_SETBACK?: number;
     SEED_LEFT: number;
     SEED_RIGHT: number;
   };
@@ -119,6 +134,18 @@ export interface IStreetRows {
       ROW_INSET: number;
     };
   };
+  /** Lawn / verge trees (optional per level). */
+  TREES?: {
+    COUNT_PER_SIDE: number;
+    SPACING: number;
+    START_Z: number;
+    ROW_INSET: number;
+    Z_JITTER: readonly [number, number];
+    X_JITTER: readonly [number, number];
+    SKIP_CHANCE: number;
+    SEED_LEFT: number;
+    SEED_RIGHT: number;
+  };
 }
 
 export interface IHouseColors {
@@ -138,7 +165,6 @@ export interface IEnvironmentConfig {
 
 export interface ICarLevelConfig {
   kinds: readonly VehicleKind[];
-  initialTraffic: readonly ITrafficSeed[];
   minSpeed: number;
   maxSpeed: number;
 }

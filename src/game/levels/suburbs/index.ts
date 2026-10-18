@@ -1,4 +1,4 @@
-import { TRAFFIC, INITIAL_TRAFFIC } from "../../constants/traffic";
+import { TRAFFIC } from "../../constants/traffic";
 import { VEHICLE_KIND } from "../../constants/vehicles";
 import type { ILevelConfig } from "../types";
 import { SUBURBS_BUILDINGS } from "./buildings";
@@ -14,8 +14,14 @@ export const SUBURBS_LEVEL: ILevelConfig = {
 	environment: SUBURBS_ENVIRONMENT,
 	buildings: SUBURBS_BUILDINGS,
 	cars: {
-		kinds: [VEHICLE_KIND.VAN, VEHICLE_KIND.SEDAN],
-		initialTraffic: INITIAL_TRAFFIC,
+		kinds: [
+			VEHICLE_KIND.VAN,
+			VEHICLE_KIND.SEDAN,
+			VEHICLE_KIND.HATCHBACK,
+			VEHICLE_KIND.WAGON,
+			VEHICLE_KIND.CROSSOVER,
+			VEHICLE_KIND.PICKUP,
+		],
 		minSpeed: TRAFFIC.MIN_SPEED,
 		maxSpeed: TRAFFIC.MAX_SPEED,
 	},

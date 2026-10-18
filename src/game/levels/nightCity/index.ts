@@ -1,4 +1,4 @@
-import { TRAFFIC, INITIAL_TRAFFIC } from "../../constants/traffic";
+import { TRAFFIC } from "../../constants/traffic";
 import { VEHICLE_KIND } from "../../constants/vehicles";
 import type { ILevelConfig } from "../types";
 import { NIGHT_CITY_BUILDINGS } from "./buildings";
@@ -14,8 +14,15 @@ export const NIGHT_CITY_LEVEL: ILevelConfig = {
   environment: NIGHT_CITY_ENVIRONMENT,
   buildings: NIGHT_CITY_BUILDINGS,
   cars: {
-    kinds: [VEHICLE_KIND.TAXI, VEHICLE_KIND.VAN, VEHICLE_KIND.SEDAN],
-    initialTraffic: INITIAL_TRAFFIC,
+    kinds: [
+      VEHICLE_KIND.TAXI,
+      VEHICLE_KIND.VAN,
+      VEHICLE_KIND.SEDAN,
+      VEHICLE_KIND.HATCHBACK,
+      VEHICLE_KIND.WAGON,
+      VEHICLE_KIND.CROSSOVER,
+      VEHICLE_KIND.PICKUP,
+    ],
     minSpeed: TRAFFIC.MIN_SPEED,
     maxSpeed: TRAFFIC.MAX_SPEED,
   },

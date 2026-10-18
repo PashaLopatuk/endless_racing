@@ -6,7 +6,6 @@ import {
   storeSelectedLevelId,
 } from "../../../game/selectedLevel";
 
-import { CarouselDots } from "./CarouselDots";
 import { ExpandLevelSelectHint } from "./ExpandLevelSelectHint";
 import { getMenuLevelMeta } from "./menuLevelMeta";
 import { LevelSelectScreen } from "./LevelSelectScreen";
@@ -81,15 +80,12 @@ export const MainMenu = ({ onSelectLevel }: Props) => {
           <TrackCarouselPill
             level={level}
             meta={meta}
+            levelCount={LEVELS.length}
+            activeIndex={activeIndex}
             onOpenLevelSelect={openLevelSelect}
             onPrevious={() => selectIndex(activeIndex - 1)}
             onNext={() => selectIndex(activeIndex + 1)}
-          />
-
-          <CarouselDots
-            count={LEVELS.length}
-            activeIndex={activeIndex}
-            onSelect={selectIndex}
+            onSelectIndex={selectIndex}
           />
 
           <ExpandLevelSelectHint onOpen={openLevelSelect} />

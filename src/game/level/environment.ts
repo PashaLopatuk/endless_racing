@@ -1,6 +1,7 @@
 import * as THREE from "three";
 
 import { createBuildingModel } from "../assets/buildings";
+import { createParkModel } from "../assets/park";
 import { createHouseModel } from "../assets/houses";
 import type { IBatchedModel, IStreetModel } from "../assets/meshBatch";
 import { createCrosswalkModel } from "../assets/crosswalk";
@@ -10,6 +11,7 @@ import { createOverheadGuideSign } from "../assets/overheadGuideSign";
 import { createOverheadTrafficLightModel } from "../assets/overheadTrafficLight";
 import { createRoadSignModel } from "../assets/roadSign";
 import { createTrashBinModel } from "../assets/trashBin";
+import { createTreeModel } from "../assets/tree";
 import { createTrafficLightModel } from "../assets/trafficLight";
 import { GUIDE_SIGN, OVERHEAD_TRAFFIC_LIGHT } from "../constants/environment/street";
 import type { ILevelConfig } from "../levels/types";
@@ -20,6 +22,8 @@ import {
   buildTrashBinPlacements,
   TRASH_BIN_ZONE,
 } from "./trashBinLayout";
+import { buildTreePlacements } from "./treeLayout";
+import { chance, createRng } from "../util/random";
 
 export interface IEnvironment {
   scroll(distance: number): void;
@@ -126,7 +130,7 @@ export const createEnvironment = (
 
   const layGuideSigns = () => {
     for (let index = 0; index < GUIDE_SIGN.COUNT; index += 1) {
-      const model = createOverheadGuideSign();
+      const model = createOverheadGuideSign(index + GUIDE_SIGN.SEED);
 
       placeModel(model, {
         x: 0,
@@ -148,6 +152,27 @@ export const createEnvironment = (
         z,
         rotationY: facingRoad(side),
         span: roadLoopSpan,
+      });
+    });
+  };
+
+  const layTrees = () => {
+    const trees = STREET_ROW.TREES;
+
+    if (!trees) {
+      return;
+    }
+
+    const span = trees.COUNT_PER_SIDE * trees.SPACING;
+
+    buildTreePlacements(STREET_ROW, CURB_X).forEach(({ x, z, seed }) => {
+      const model = createTreeModel(seed);
+
+      placeModel(model, {
+        x,
+        z,
+        rotationY: (Math.abs(seed) % 8) * (Math.PI / 4),
+        span,
       });
     });
   };
@@ -186,25 +211,46 @@ export const createEnvironment = (
     const rotationY = facingRoad(side);
     const { BUILDINGS, HOUSES, TRAFFIC_LIGHTS, STREET_LIGHTS } = STREET_ROW;
 
-    lineRow(BUILDINGS.COUNT_PER_SIDE, (index) => {
-      const model = createBuildingModel(
-        index + (isRight ? BUILDINGS.SEED_RIGHT : BUILDINGS.SEED_LEFT),
-        level.buildings,
-      );
+    const buildingSetback = BUILDINGS.FAR_SETBACK ?? 0;
+    const buildingSpan = BUILDINGS.COUNT_PER_SIDE * BUILDINGS.SPACING;
 
-      const x =
-        side * (CURB_X + HOUSES.ROW_DEPTH + model.width / 2 + BUILDINGS.GAP);
+    for (let index = 0; index < BUILDINGS.COUNT_PER_SIDE; index += 1) {
+      const seed =
+        index + (isRight ? BUILDINGS.SEED_RIGHT : BUILDINGS.SEED_LEFT);
+      const z = BUILDINGS.START_Z + index * BUILDINGS.SPACING;
+      const building = createBuildingModel(seed, level.buildings);
+      const buildingX =
+        side *
+        (CURB_X +
+          HOUSES.ROW_DEPTH +
+          buildingSetback +
+          building.width / 2 +
+          BUILDINGS.GAP);
 
-      return {
-        model,
-        placement: {
-          x,
-          z: BUILDINGS.START_Z + index * BUILDINGS.SPACING,
+      placeModel(building, {
+        x: buildingX,
+        z,
+        rotationY,
+        span: buildingSpan,
+      });
+
+      const parkConfig = level.terrain.park;
+
+      if (
+        parkConfig &&
+        chance(createRng(seed + 7919), parkConfig.replaceBuildingChance)
+      ) {
+        const park = createParkModel(seed, parkConfig, true);
+        const parkX = side * (CURB_X + parkConfig.nearInset + park.width / 2);
+
+        placeModel(park, {
+          x: parkX,
+          z,
           rotationY,
-          span: BUILDINGS.COUNT_PER_SIDE * BUILDINGS.SPACING,
-        },
-      };
-    });
+          span: buildingSpan,
+        });
+      }
+    }
 
     lineRow(HOUSES.COUNT_PER_SIDE, (index) => {
       const model = createHouseModel(
@@ -272,6 +318,7 @@ export const createEnvironment = (
   layGuideSigns();
   layRoadSigns();
   layTrashBins();
+  layTrees();
   STREET_SIDES.forEach(lineStreetSide);
 
   return {

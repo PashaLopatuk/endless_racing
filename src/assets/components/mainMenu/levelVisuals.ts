@@ -19,7 +19,6 @@ export const levelBackdropGradient = (level: ILevelConfig): string => {
   return `linear-gradient(180deg, ${top} 0%, ${mid} 42%, ${ground} 100%)`;
 };
 
-export const levelSkylineColors = (level: ILevelConfig): string[] =>
-  level.buildings.buildings.map(
-    (building) => hexColor(building.wallColors[0] ?? level.palette.skyColor),
-  );
+/** Dominant menu / swatch color for a level (horizon tone from the sky palette). */
+export const levelMainColor = (level: ILevelConfig): string =>
+  unitColor(level.palette.horizon);

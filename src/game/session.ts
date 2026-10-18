@@ -51,6 +51,7 @@ export const createGameSession = async ({
     view.scene,
     level.cars,
     level.palette.outputGamma,
+    level.palette.skyMode ?? "night",
   );
   const environment = createEnvironment(view.scene, level);
   const collisions = createCollisionSystem({ player, traffic });
@@ -69,7 +70,13 @@ export const createGameSession = async ({
 
     player.update(isGameOver ? IDLE_GESTURE : input.read(), dt, isGameOver);
 
-    traffic.update(player.speed, dt, !isGameOver);
+    traffic.update(
+      player.speed,
+      player.worldZ,
+      player.x,
+      dt,
+      !isGameOver,
+    );
 
     environment.scroll(player.speed * dt);
 
