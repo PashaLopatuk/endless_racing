@@ -7,14 +7,17 @@ import {
   type IStreetModel,
 } from "./meshBatch";
 
-const KIND_COUNT = ROAD_SIGN.KINDS.length;
-
-const addSpeedSign = (
+type SignBuilder = (
   batch: IMeshBatch,
   faceX: number,
   y: number,
   seed: number,
-) => {
+) => void;
+
+const faceOffsetX = (faceX: number) =>
+  ROAD_SIGN.PANEL.FACE_OFFSET * Math.sign(faceX);
+
+const addSpeedSign: SignBuilder = (batch, faceX, y, seed) => {
   const { PANEL, SPEED } = ROAD_SIGN;
   const limitIndex = Math.abs(seed) % SPEED.LIMITS.length;
   const digitHeight = 0.16 + limitIndex * 0.04;
@@ -27,24 +30,19 @@ const addSpeedSign = (
   });
   batch.addBox({
     size: PANEL.INNER_SIZE,
-    position: [faceX + PANEL.FACE_OFFSET * Math.sign(faceX), y, 0],
+    position: [faceX + faceOffsetX(faceX), y, 0],
     color: SPEED.FACE_COLOR,
     layer: BATCH_LAYER.GLOW,
   });
   batch.addBox({
     size: [SPEED.DIGIT_SIZE[0], digitHeight, SPEED.DIGIT_SIZE[2]],
-    position: [faceX + PANEL.FACE_OFFSET * Math.sign(faceX), y, 0],
+    position: [faceX + faceOffsetX(faceX), y, 0],
     color: SPEED.DIGIT_COLOR,
     layer: BATCH_LAYER.GLOW,
   });
 };
 
-const addWarningSign = (
-  batch: IMeshBatch,
-  faceX: number,
-  y: number,
-  seed: number,
-) => {
+const addWarningSign: SignBuilder = (batch, faceX, y, seed) => {
   const { PANEL, WARNING } = ROAD_SIGN;
   const accent = WARNING.ACCENTS[Math.abs(seed) % WARNING.ACCENTS.length];
 
@@ -56,18 +54,13 @@ const addWarningSign = (
   });
   batch.addBox({
     size: WARNING.STRIPE_SIZE,
-    position: [faceX + PANEL.FACE_OFFSET * Math.sign(faceX), y + accent.y, 0],
+    position: [faceX + faceOffsetX(faceX), y + accent.y, 0],
     color: WARNING.STRIPE_COLOR,
     layer: BATCH_LAYER.GLOW,
   });
 };
 
-const addInfoSign = (
-  batch: IMeshBatch,
-  faceX: number,
-  y: number,
-  seed: number,
-) => {
+const addInfoSign: SignBuilder = (batch, faceX, y, seed) => {
   const { PANEL, INFO } = ROAD_SIGN;
   const palette = INFO.COLORS[Math.abs(seed) % INFO.COLORS.length];
 
@@ -79,18 +72,13 @@ const addInfoSign = (
   });
   batch.addBox({
     size: INFO.BAND_SIZE,
-    position: [faceX + PANEL.FACE_OFFSET * Math.sign(faceX), y + INFO.BAND_Y, 0],
+    position: [faceX + faceOffsetX(faceX), y + INFO.BAND_Y, 0],
     color: palette.band,
     layer: BATCH_LAYER.GLOW,
   });
 };
 
-const addRouteSign = (
-  batch: IMeshBatch,
-  faceX: number,
-  y: number,
-  seed: number,
-) => {
+const addRouteSign: SignBuilder = (batch, faceX, y, seed) => {
   const { PANEL, ROUTE } = ROAD_SIGN;
   const variant = ROUTE.COLORS[Math.abs(seed) % ROUTE.COLORS.length];
 
@@ -102,20 +90,111 @@ const addRouteSign = (
   });
   batch.addBox({
     size: ROUTE.ARROW_SIZE,
-    position: [
-      faceX + PANEL.FACE_OFFSET * Math.sign(faceX),
-      y + variant.arrowY,
-      0,
-    ],
+    position: [faceX + faceOffsetX(faceX), y + variant.arrowY, 0],
     color: variant.arrow,
     layer: BATCH_LAYER.GLOW,
   });
 };
 
+const addStopSign: SignBuilder = (batch, faceX, y) => {
+  const { STOP } = ROAD_SIGN;
+  const offsetX = faceOffsetX(faceX);
+
+  batch.addBox({
+    size: STOP.FACE_SIZE,
+    position: [faceX, y, 0],
+    color: STOP.FACE_COLOR,
+    layer: BATCH_LAYER.GLOW,
+    rotation: [0, 0, Math.PI / 4],
+  });
+  for (const barY of STOP.BAR_OFFSETS) {
+    batch.addBox({
+      size: STOP.BAR_SIZE,
+      position: [faceX + offsetX, y + barY, 0],
+      color: STOP.LETTER_COLOR,
+      layer: BATCH_LAYER.GLOW,
+    });
+  }
+};
+
+const addNoEntrySign: SignBuilder = (batch, faceX, y) => {
+  const { NO_ENTRY } = ROAD_SIGN;
+  const offsetX = faceOffsetX(faceX);
+
+  batch.addBox({
+    size: NO_ENTRY.RING_SIZE,
+    position: [faceX, y, 0],
+    color: NO_ENTRY.RING_COLOR,
+    layer: BATCH_LAYER.GLOW,
+  });
+  batch.addBox({
+    size: NO_ENTRY.BAR_SIZE,
+    position: [faceX + offsetX, y, 0],
+    color: NO_ENTRY.BAR_COLOR,
+    layer: BATCH_LAYER.GLOW,
+  });
+};
+
+const addParkingSign: SignBuilder = (batch, faceX, y) => {
+  const { PARKING } = ROAD_SIGN;
+  const offsetX = faceOffsetX(faceX);
+
+  batch.addBox({
+    size: PARKING.FACE_SIZE,
+    position: [faceX, y, 0],
+    color: PARKING.FACE_COLOR,
+    layer: BATCH_LAYER.GLOW,
+  });
+  batch.addBox({
+    size: PARKING.STEM_SIZE,
+    position: [faceX + offsetX, y + PARKING.STEM_Y, 0],
+    color: PARKING.SYMBOL_COLOR,
+    layer: BATCH_LAYER.GLOW,
+  });
+  batch.addBox({
+    size: PARKING.LOOP_SIZE,
+    position: [faceX + offsetX, y + PARKING.LOOP_Y, 0],
+    color: PARKING.SYMBOL_COLOR,
+    layer: BATCH_LAYER.GLOW,
+  });
+};
+
+const addCrossingSign: SignBuilder = (batch, faceX, y, seed) => {
+  const { CROSSING } = ROAD_SIGN;
+  const offsetX = faceOffsetX(faceX);
+  const stripeIndex = Math.abs(seed) % CROSSING.STRIPE_YS.length;
+
+  batch.addBox({
+    size: CROSSING.FACE_SIZE,
+    position: [faceX, y, 0],
+    color: CROSSING.FACE_COLOR,
+    layer: BATCH_LAYER.GLOW,
+  });
+  for (let index = 0; index <= stripeIndex; index += 1) {
+    batch.addBox({
+      size: CROSSING.STRIPE_SIZE,
+      position: [faceX + offsetX, y + CROSSING.STRIPE_YS[index], 0],
+      color: CROSSING.STRIPE_COLOR,
+      layer: BATCH_LAYER.GLOW,
+    });
+  }
+};
+
+const SIGN_BUILDERS: readonly SignBuilder[] = [
+  addSpeedSign,
+  addWarningSign,
+  addInfoSign,
+  addRouteSign,
+  addStopSign,
+  addNoEntrySign,
+  addParkingSign,
+  addCrossingSign,
+];
+
 export const createRoadSignModel = (seed: number): IStreetModel => {
   const { POST } = ROAD_SIGN;
   const batch = createMeshBatch();
-  const kind = Math.abs(seed) % KIND_COUNT;
+  const kind = Math.abs(seed) % SIGN_BUILDERS.length;
   const faceX = POST.SIGN_FACE_X;
   const signY = POST.SIGN_Y;
 
@@ -130,20 +209,7 @@ export const createRoadSignModel = (seed: number): IStreetModel => {
     color: POST.COLOR,
   });
 
-  switch (kind) {
-    case 0:
-      addSpeedSign(batch, faceX, signY, seed);
-      break;
-    case 1:
-      addWarningSign(batch, faceX, signY, seed);
-      break;
-    case 2:
-      addInfoSign(batch, faceX, signY, seed);
-      break;
-    default:
-      addRouteSign(batch, faceX, signY, seed);
-      break;
-  }
+  SIGN_BUILDERS[kind](batch, faceX, signY, seed);
 
   return toStreetModel(batch, ROAD_SIGN.FOOTPRINT, ROAD_SIGN.FOOTPRINT);
 };

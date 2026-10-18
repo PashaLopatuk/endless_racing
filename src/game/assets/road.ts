@@ -1,4 +1,9 @@
-import { ROAD, STREET } from "../constants/environment/street";
+import * as THREE from "three";
+
+import { ASSET_KEY } from "../constants/assets";
+import { ROAD } from "../constants/environment/street";
+import type { IStreetConfig, ITerrainConfig } from "../levels/types";
+import { sharedAssets } from "./sharedAssets";
 import {
   LANE,
   MIRRORED_SIDES,
@@ -12,8 +17,11 @@ import {
   type IMeshBatch,
 } from "./meshBatch";
 
-const addLaneDashes = (batch: IMeshBatch) => {
-  const length = STREET.ROAD_SEGMENT_LENGTH;
+const addLaneDashes = (
+  batch: IMeshBatch,
+  length: number,
+  dashColor: number,
+) => {
   const dashCount = Math.floor(length / ROAD.DASH_STRIDE);
   const firstZ = -length / 2 + ROAD.DASH_STRIDE * ROAD.DASH_PHASE;
 
@@ -24,42 +32,65 @@ const addLaneDashes = (batch: IMeshBatch) => {
       batch.addBox({
         size: [ROAD.DASH_WIDTH, ROAD.MARK_THICKNESS, ROAD.DASH_LENGTH],
         position: [x, ROAD.MARK_Y, firstZ + dash * ROAD.DASH_STRIDE],
-        color: ROAD.DASH_COLOR,
+        color: dashColor,
       });
     }
   }
 };
 
-/** One road tile: asphalt, sidewalks, edge lines and lane dashes merged into a single mesh. */
-export const createRoadSegment = (): IBatchedModel => {
-  const length = STREET.ROAD_SEGMENT_LENGTH;
-  const batch = createMeshBatch();
-
-  batch.addBox({
-    size: [ROAD_WIDTH, ROAD.ASPHALT_THICKNESS, length],
-    position: [0, -ROAD.ASPHALT_THICKNESS / 2, 0],
-    color: ROAD.ASPHALT_COLOR,
+const wetAsphaltMaterial = (color: number): THREE.Material =>
+  sharedAssets.material(ASSET_KEY.WET_ASPHALT_MATERIAL, () => {
+    return new THREE.MeshStandardMaterial({
+      color,
+      roughness: 0.85,
+      metalness: 0.0,
+    });
   });
+
+/** One road tile: wet asphalt plus sidewalks, edge lines and lane dashes. */
+export const createRoadSegment = (
+  street: IStreetConfig,
+  terrain: ITerrainConfig,
+): IBatchedModel => {
+  const length = street.ROAD_SEGMENT_LENGTH;
+  const batch = createMeshBatch();
 
   for (const side of MIRRORED_SIDES) {
     batch.addBox({
-      size: [STREET.SIDEWALK_WIDTH, ROAD.SIDEWALK_HEIGHT, length],
+      size: [street.SIDEWALK_WIDTH, ROAD.SIDEWALK_HEIGHT, length],
       position: [
-        side * (ROAD_HALF_WIDTH + STREET.SIDEWALK_WIDTH / 2),
+        side * (ROAD_HALF_WIDTH + street.SIDEWALK_WIDTH / 2),
         ROAD.SIDEWALK_Y,
         0,
       ],
-      color: ROAD.SIDEWALK_COLOR,
+      color: terrain.sidewalkColor,
     });
 
     batch.addBox({
       size: [ROAD.EDGE_WIDTH, ROAD.MARK_THICKNESS, length],
       position: [side * (ROAD_HALF_WIDTH - ROAD.EDGE_INSET), ROAD.MARK_Y, 0],
-      color: ROAD.EDGE_COLOR,
+      color: terrain.edgeColor,
     });
   }
 
-  addLaneDashes(batch);
+  addLaneDashes(batch, length, terrain.dashColor);
 
-  return batch.build();
+  const model = batch.build();
+  const asphalt = new THREE.Mesh(
+    new THREE.BoxGeometry(ROAD_WIDTH, ROAD.ASPHALT_THICKNESS, length),
+    wetAsphaltMaterial(terrain.asphaltColor),
+  );
+
+  asphalt.position.y = -ROAD.ASPHALT_THICKNESS / 2;
+  model.object.add(asphalt);
+
+  const disposeModel = model.dispose;
+
+  return {
+    object: model.object,
+    dispose: () => {
+      disposeModel();
+      asphalt.geometry.dispose();
+    },
+  };
 };

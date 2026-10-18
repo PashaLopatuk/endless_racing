@@ -12,14 +12,7 @@ import {
   TOWNHOUSE,
   type HouseStyle,
 } from "../constants/houses";
-import {
-  AWNING_PALETTE,
-  DOOR_PALETTE,
-  HOUSE_PALETTE,
-  NEON_PALETTE,
-  ROOF_PALETTE,
-  TRIM_PALETTE,
-} from "../constants/palette";
+import type { IHouseColors } from "../levels/types";
 import {
   GLOW_PROFILE,
   WINDOW_KIND,
@@ -48,6 +41,7 @@ import { addWindow } from "./windows";
 interface IHouseContext {
   batch: IMeshBatch;
   random: Rng;
+  colors: IHouseColors;
   wall: number;
   trim: number;
   roof: number;
@@ -69,13 +63,17 @@ interface IGableRoofSpec {
 
 type HouseBuilder = (context: IHouseContext) => IStreetModel;
 
-const createHouseContext = (random: Rng): IHouseContext => ({
+const createHouseContext = (
+  random: Rng,
+  colors: IHouseColors,
+): IHouseContext => ({
   batch: createStreetMeshBatch(),
   random,
-  wall: pickWallColor(random, HOUSE_PALETTE),
-  trim: pick(random, TRIM_PALETTE),
-  roof: pick(random, ROOF_PALETTE),
-  door: pick(random, DOOR_PALETTE),
+  colors,
+  wall: pickWallColor(random, colors.wallColors),
+  trim: pick(random, colors.trimColors),
+  roof: pick(random, colors.roofColors),
+  door: pick(random, colors.doorColors),
 });
 
 const addHouseWindow = (
@@ -422,7 +420,7 @@ const buildModernHouse: HouseBuilder = (context) => {
     width: upperWidth,
     height: upperHeight,
     depth: upperDepth,
-    color: pickWallColor(random, HOUSE_PALETTE),
+    color: pickWallColor(random, context.colors.wallColors),
     x: upperX,
     z: upperZ,
     baseY: baseHeight,
@@ -518,13 +516,13 @@ const buildShopHouse: HouseBuilder = (context) => {
       AWNING.Y - (AWNING.DEPTH / 2) * Math.sin(AWNING.TILT),
       0,
     ],
-    color: pick(random, AWNING_PALETTE),
+    color: pick(random, context.colors.awningColors),
   });
 
   batch.addBox({
     size: [SIGN.DEPTH, SIGN.HEIGHT, depth * SIGN.LENGTH_RATIO],
     position: [faceX + SIGN.DEPTH / 2, SIGN.Y, 0],
-    color: pick(random, NEON_PALETTE),
+    color: pick(random, context.colors.neonColors),
     layer: BATCH_LAYER.GLOW,
   });
 
@@ -549,10 +547,13 @@ const BUILDERS: Readonly<Record<HouseStyle, HouseBuilder>> = {
 };
 
 /** Deterministic: the same seed always yields the same house. */
-export const createHouseModel = (seed: number): IStreetModel => {
+export const createHouseModel = (
+  seed: number,
+  colors: IHouseColors,
+): IStreetModel => {
   const random = createRng(seed);
 
   const { style } = pickWeighted(random, HOUSE_STYLE_WEIGHTS);
 
-  return BUILDERS[style](createHouseContext(random));
+  return BUILDERS[style](createHouseContext(random, colors));
 };

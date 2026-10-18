@@ -62,8 +62,13 @@ export const pickWallColor = (
 export const pickBuildingWallColor = (
   random: Rng,
   palette: readonly number[],
+  colorRandomize?: {
+    HUE: number;
+    SATURATION: number;
+    LIGHTNESS: number;
+  },
 ): number => {
-  return randomizeBuildingHex(pick(random, palette), random);
+  return randomizeBuildingHex(pick(random, palette), random, colorRandomize);
 };
 
 export const columnsForDepth = (depth: number): number => {

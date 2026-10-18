@@ -15,6 +15,8 @@ export interface IBodyUserData {
 
 export interface IGameHudState {
   speedKmh: number;
+  /** Meters driven this run. */
+  score: number;
   health: number;
   maxHealth: number;
   isGameOver: boolean;

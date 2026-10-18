@@ -2,6 +2,7 @@ import { GAME_LOG } from "./constants/simulation";
 import { startLoop } from "./loop";
 import { createPhysics, type IPhysicsWorld } from "./physics";
 import { createGameSession, type IGameSession } from "./session";
+import type { ILevelConfig } from "./levels";
 import type { IGameCallbacks, IGameController } from "./types";
 
 /**
@@ -11,6 +12,7 @@ import type { IGameCallbacks, IGameController } from "./types";
 export const createGame = (
   container: HTMLElement,
   callbacks: IGameCallbacks,
+  level: ILevelConfig,
 ): IGameController => {
   let isDisposed = false;
   let bootGeneration = 0;
@@ -98,6 +100,7 @@ export const createGame = (
         container,
         physics,
         callbacks: activeCallbacks,
+        level,
       });
     } catch (error) {
       disposePhysicsAsync(physics);

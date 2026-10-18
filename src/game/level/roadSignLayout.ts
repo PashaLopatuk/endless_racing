@@ -1,4 +1,4 @@
-import { STREET_ROW } from "../constants/environment/street";
+import type { IStreetRows } from "../levels/types";
 import { STREET_SIDE } from "../constants/world";
 import { createRng, randomIn } from "../util/random";
 
@@ -8,9 +8,10 @@ export interface IRoadSignPlacement {
   seed: number;
 }
 
-export const buildRoadSignPlacements = (): IRoadSignPlacement[] => {
-  const { COUNT, SEED, START_Z, MIN_SPACING, SPACING_JITTER } =
-    STREET_ROW.ROAD_SIGNS;
+export const buildRoadSignPlacements = (
+  rows: IStreetRows,
+): IRoadSignPlacement[] => {
+  const { COUNT, SEED, START_Z, MIN_SPACING, SPACING_JITTER } = rows.ROAD_SIGNS;
   const random = createRng(SEED);
   const placements: IRoadSignPlacement[] = [];
   let z = START_Z;
