@@ -27,6 +27,15 @@ interface IContactNormal {
 
 const KNOWN_BODY_KINDS = new Set(Object.values(BODY_KIND));
 
+/**
+ * Player and traffic are kinematic position-based bodies. This mask includes
+ * kinematic–kinematic pairs so Rapier emits contacts between cars.
+ */
+export const VEHICLE_ACTIVE_COLLISION_TYPES = (RAPIER.ActiveCollisionTypes
+  .DEFAULT |
+  RAPIER.ActiveCollisionTypes
+    .KINEMATIC_KINEMATIC) as RAPIER.ActiveCollisionTypes;
+
 export const readBodyData = (body: RAPIER.RigidBody): IBodyUserData | null => {
   const data = body.userData as Partial<IBodyUserData> | undefined;
 
