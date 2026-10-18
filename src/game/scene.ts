@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-import { createStarSky } from "./assets/sky";
+import { createLevelSky } from "./assets/sky";
 import { CAMERA, GROUND, RENDERER } from "./constants/camera";
 import type { ILevelConfig, ILevelPalette } from "./levels/types";
 import { MOTION_BLUR } from "./constants/postfx";
@@ -22,6 +22,7 @@ import {
   mrt,
   output,
   pow,
+  smoothstep,
   screenUV,
   velocity,
   uniform,
@@ -66,6 +67,42 @@ const addLights = (scene: THREE.Scene, palette: ILevelPalette) => {
   scene.add(fill);
 };
 
+const DAY_FOG_CURVE = 0.74;
+const DAY_FOG_HAZE_DIM = 0.84;
+
+const createFogHaze = (palette: ILevelPalette): THREE.Color => {
+  if (palette.skyMode === "day") {
+    const [hr, hg, hb] = palette.horizon;
+    const [zr, zg, zb] = palette.zenith;
+    const zenithMix = 0.48;
+
+    const haze = new THREE.Color(
+      hr * (1 - zenithMix) + zr * zenithMix,
+      hg * (1 - zenithMix) + zg * zenithMix,
+      hb * (1 - zenithMix) + zb * zenithMix,
+    );
+
+    haze.lerp(new THREE.Color(palette.skyColor), 0.28);
+    haze.multiplyScalar(DAY_FOG_HAZE_DIM);
+
+    return haze;
+  }
+
+  return new THREE.Color(palette.skyColor).lerp(new THREE.Color(0x7f97b8), 0.42);
+};
+
+const createFogFactorNode = (palette: ILevelPalette) => {
+  const linear = rangeFogFactor(float(palette.fogNear), float(palette.fogFar));
+
+  if (palette.skyMode === "day") {
+    const eased = pow(linear, float(DAY_FOG_CURVE));
+
+    return smoothstep(float(0), float(1), eased);
+  }
+
+  return linear;
+};
+
 const createGround = (groundColor: number): THREE.Mesh<
   THREE.PlaneGeometry,
   THREE.MeshLambertMaterial
@@ -86,18 +123,15 @@ export const createGameScene = (
   const { palette, terrain } = level;
   const scene = new THREE.Scene();
 
-  const haze = new THREE.Color(palette.skyColor).lerp(
-    new THREE.Color(0x7f97b8),
-    0.42,
-  );
+  const haze = createFogHaze(palette);
 
   scene.background = new THREE.Color(palette.skyColor);
-  scene.fog = new THREE.Fog(haze, 70, 230);
-  scene.fogNode = fog(color(haze), rangeFogFactor(float(70), float(230)));
+  scene.fog = new THREE.Fog(haze, palette.fogNear, palette.fogFar);
+  scene.fogNode = fog(color(haze), createFogFactorNode(palette));
 
   addLights(scene, palette);
 
-  const sky = createStarSky(palette);
+  const sky = createLevelSky(palette);
 
   scene.add(sky.mesh);
 
@@ -166,7 +200,13 @@ export const createGameScene = (
     .mul(spatialBlurScale);
 
   const mBlur = motionBlur(beauty, vel, vec4(MOTION_BLUR.SAMPLE_COUNT));
-  const lampBloom = bloom(beauty, 0.42, 0.38, 0.56);
+  const isDayLevel = palette.skyMode === "day";
+  const lampBloom = bloom(
+    beauty,
+    isDayLevel ? 0.26 : 0.42,
+    isDayLevel ? 0.34 : 0.38,
+    isDayLevel ? 0.68 : 0.56,
+  );
 
   const vignette = screenUV
     .distance(0.5)

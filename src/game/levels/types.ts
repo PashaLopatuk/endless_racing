@@ -10,8 +10,12 @@ export type {
   IColorSpread,
 } from "./buildings/types";
 
+export type LevelSkyMode = "day" | "night";
+
 export interface ILevelPalette {
   outputGamma: number;
+  /** `night` adds stars; `day` is a bright sun sky without stars. */
+  skyMode?: LevelSkyMode;
   skyColor: number;
   fogNear: number;
   fogFar: number;

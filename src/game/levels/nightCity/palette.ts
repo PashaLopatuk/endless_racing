@@ -2,6 +2,7 @@ import type { ILevelPalette } from "../types";
 
 /** Night-city grade: cool moon, warm fill, and a slight crush on the frame. */
 export const NIGHT_CITY_PALETTE: ILevelPalette = {
+  skyMode: "night",
   outputGamma: 1.08,
   skyColor: 0x070910,
   fogNear: 18,

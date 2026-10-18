@@ -1,5 +1,5 @@
-import { INDUSTRIAL_LEVEL } from "./industrial";
 import { NIGHT_CITY_LEVEL } from "./nightCity";
+import { SUBURBS_LEVEL } from "./suburbs";
 import type { ILevelConfig } from "./types";
 
 export type {
@@ -11,13 +11,14 @@ export type {
   IHouseColors,
   ILevelConfig,
   ILevelPalette,
+  LevelSkyMode,
   IStreetRows,
   ITerrainConfig,
 } from "./types";
 
 export const LEVELS: readonly ILevelConfig[] = [
   NIGHT_CITY_LEVEL,
-  INDUSTRIAL_LEVEL,
+  SUBURBS_LEVEL,
 ];
 
 const LEVEL_BY_ID = new Map(LEVELS.map((level) => [level.id, level]));

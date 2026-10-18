@@ -1,6 +1,6 @@
 import type { IEnvironmentConfig } from "../../types";
 
-export const INDUSTRIAL_ENVIRONMENT: IEnvironmentConfig = {
+export const SUBURBS_ENVIRONMENT: IEnvironmentConfig = {
 	street: {
 		ROAD_SEGMENT_LENGTH: 48,
 		ROAD_SEGMENT_COUNT: 8,
@@ -11,9 +11,9 @@ export const INDUSTRIAL_ENVIRONMENT: IEnvironmentConfig = {
 	rows: {
 		BUILDINGS: {
 			COUNT_PER_SIDE: 10,
-			SPACING: 32,
+			SPACING: 30,
 			START_Z: -56,
-			GAP: 2.4,
+			GAP: 3.2,
 			SEED_LEFT: 5000,
 			SEED_RIGHT: 6000,
 		},
@@ -76,7 +76,7 @@ export const INDUSTRIAL_ENVIRONMENT: IEnvironmentConfig = {
 	},
 	houses: {
 		wallColors: [
-			0x5a4838, 0x4a3828, 0x6a5848, 0x3a2818, 0x7a6858, 0x2a1808,
+			0xe8dcc8, 0xd8ccb8, 0xc8bca8, 0xf0e4d0, 0xb8ac98, 0xa89c88,
 		],
 		trimColors: [
 			0x8a7868, 0x6a5848, 0x4a3828, 0x9a8878, 0x3a2818,

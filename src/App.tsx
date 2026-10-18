@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { GameCanvas } from "./assets/components/GameCanvas";
-import { MainMenu } from "./assets/components/MainMenu";
+import { MainMenu } from "./assets/components/mainMenu/MainMenu";
 import { getLevelConfig } from "./game/levels";
 
 const App = () => {
