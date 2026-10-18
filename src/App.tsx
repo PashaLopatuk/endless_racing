@@ -1,14 +1,22 @@
 import { useState } from "react";
 
 import { GameCanvas } from "./assets/components/GameCanvas";
-import { DEFAULT_LEVEL, getLevelConfig } from "./game/levels";
+import { MainMenu } from "./assets/components/MainMenu";
+import { getLevelConfig } from "./game/levels";
 
 const App = () => {
-  const [levelId, setLevelId] = useState(DEFAULT_LEVEL.id);
+  const [activeLevelId, setActiveLevelId] = useState<string | null>(null);
 
   return (
     <div className="app-shell">
-      <GameCanvas level={getLevelConfig(levelId)} onLevelChange={setLevelId} />
+      {activeLevelId ? (
+        <GameCanvas
+          level={getLevelConfig(activeLevelId)}
+          onExit={() => setActiveLevelId(null)}
+        />
+      ) : (
+        <MainMenu onSelectLevel={setActiveLevelId} />
+      )}
     </div>
   );
 };

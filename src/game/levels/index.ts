@@ -1,17 +1,28 @@
-import { DOWNTOWN_LEVEL } from "./downtown";
 import { INDUSTRIAL_LEVEL } from "./industrial";
+import { NIGHT_CITY_LEVEL } from "./nightCity";
 import type { ILevelConfig } from "./types";
 
-export type { IBuildingLevelConfig, ICarLevelConfig, ILevelConfig } from "./types";
+export type {
+  IBuildingDefinition,
+  IBuildingGeometry,
+  IBuildingSet,
+  ICarLevelConfig,
+  IEnvironmentConfig,
+  IHouseColors,
+  ILevelConfig,
+  ILevelPalette,
+  IStreetRows,
+  ITerrainConfig,
+} from "./types";
 
 export const LEVELS: readonly ILevelConfig[] = [
-  DOWNTOWN_LEVEL,
+  NIGHT_CITY_LEVEL,
   INDUSTRIAL_LEVEL,
 ];
 
 const LEVEL_BY_ID = new Map(LEVELS.map((level) => [level.id, level]));
 
-export const DEFAULT_LEVEL = DOWNTOWN_LEVEL;
+export const DEFAULT_LEVEL = NIGHT_CITY_LEVEL;
 
 export const getLevelConfig = (levelId: string): ILevelConfig => {
   const level = LEVEL_BY_ID.get(levelId);

@@ -275,13 +275,23 @@ export const VEHICLE_STYLE = {
 /** Real light that illuminates the road; only the player car pays for it. */
 export const HEADLIGHT_SPOT = {
   COLOR: 0xfff4d2,
-  INTENSITY: 7,
-  DISTANCE: 32,
-  ANGLE: 0.38,
-  PENUMBRA: 0.45,
-  DECAY: 1.15,
-  TARGET_DROP: 0.35,
-  TARGET_DISTANCE: 16,
+  INTENSITY: 2.5,
+  DISTANCE: 18,
+  ANGLE: 0.32,
+  PENUMBRA: 0.55,
+  DECAY: 1.4,
+  TARGET_DROP: 0.85,
+  TARGET_DISTANCE: 11,
+} as const;
+
+/** Short pool under each headlamp so the wet road shows two separate glints. */
+export const HEADLIGHT_POOL = {
+  COLOR: 0xfff4d2,
+  INTENSITY: 2.5,
+  DISTANCE: 2.0,
+  DECAY: 2,
+  Y: -0.32,
+  Z_OFFSET: 0.7,
 } as const;
 
 /** Fake volumetric beam: an open cone, additively blended, fading along its length and toward its silhouette. */

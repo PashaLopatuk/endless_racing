@@ -57,3 +57,13 @@ export const randomizeBuildingHex = (
 export const mixHex = (from: number, to: number, amount: number): number => {
   return scratch.setHex(from).lerp(target.setHex(to), amount).getHex();
 };
+
+/** Same `pow(channel, gamma)` the frame grade uses, applied to one paint color. */
+export const applyOutputGamma = (hex: number, gamma: number): number => {
+  scratch.setHex(hex);
+  scratch.r = Math.pow(scratch.r, gamma);
+  scratch.g = Math.pow(scratch.g, gamma);
+  scratch.b = Math.pow(scratch.b, gamma);
+
+  return scratch.getHex();
+};

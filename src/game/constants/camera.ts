@@ -6,13 +6,13 @@ export const CAMERA = {
   FOV_EPSILON: 0.1,
   NEAR: 0.1,
   FAR: 320,
-  HEIGHT: 10,
+  HEIGHT: 8,
   BACK: 15,
   LOOK_AHEAD: 18,
-  LOOK_HEIGHT: 1.15,
+  LOOK_HEIGHT: 1.0,
   FOLLOW: 3.2,
   FOLLOW_X_RATIO: 0.7,
-  FOLLOW_X_SPEED_RATIO: 0.7,
+  FOLLOW_X_SPEED_RATIO: 0.5,
   MAX_SPEED_DISTANCE: 8,
 } as const;
 
@@ -22,28 +22,16 @@ export const RENDERER = {
   CANVAS_CLASS: "game-webgl-canvas",
 } as const;
 
-export const SCENE_LIGHTING = {
-  SKY_COLOR: 0x070910,
-  FOG_NEAR: 36,
-  FOG_FAR: 190,
-  HEMISPHERE: { SKY: 0x243044, GROUND: 0x0a0a0c, INTENSITY: 0.72 },
-  MOON: { COLOR: 0xb7c4d4, INTENSITY: 1.25, POSITION: [-28, 36, -18] },
-  FILL: { COLOR: 0x3a2a20, INTENSITY: 0.38, POSITION: [16, 12, 30] },
-} as const;
-
 export const GROUND = {
   WIDTH: 420,
   LENGTH: 900,
   Y: -0.22,
   Z: 120,
-  COLOR: 0x12151c,
 } as const;
 
 export const SKY = {
   SCALE: 500,
   RENDER_ORDER: -1,
-  HORIZON: [0.027, 0.035, 0.063],
-  ZENITH: [0.035, 0.055, 0.12],
   STAR_GRID: 280,
   STAR_THRESHOLD: 0.993,
   BRIGHT_STAR_THRESHOLD: 0.998,

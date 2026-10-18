@@ -1,0 +1,145 @@
+.main-menu-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 28px 20px 32px;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(36, 48, 68, 0.55), transparent 42%),
+    #070910;
+  color: #f2efe8;
+}
+
+.main-menu-header {
+  max-width: 640px;
+  margin-bottom: 28px;
+}
+
+.main-menu-kicker {
+  margin: 0 0 8px;
+  font-size: 13px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(242, 239, 232, 0.62);
+}
+
+.main-menu-title {
+  margin: 0;
+  font-size: 40px;
+  line-height: 44px;
+  font-weight: 560;
+}
+
+.level-gallery {
+  display: flex;
+  gap: 16px;
+  margin: 0;
+  padding: 4px 2px 8px;
+  overflow-x: auto;
+  list-style: none;
+}
+
+.level-card {
+  flex: 0 0 240px;
+}
+
+.level-card-button {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0;
+  border: 1px solid rgba(232, 220, 190, 0.22);
+  border-radius: 0;
+  background: #10141c;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.level-card-button:hover,
+.level-card-button:focus-visible {
+  border-color: #e6c48a;
+  outline: none;
+}
+
+.level-card-preview {
+  position: relative;
+  display: block;
+  height: 280px;
+  overflow: hidden;
+}
+
+.level-card-skyline {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 54px;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 168px;
+}
+
+.level-card-tower {
+  flex: 1;
+  min-width: 0;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+
+.level-card-road {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 54px;
+}
+
+.level-card-lane {
+  position: absolute;
+  top: 24px;
+  left: 18%;
+  width: 64%;
+  height: 3px;
+  opacity: 0.85;
+}
+
+.level-card-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 14px 16px;
+}
+
+.level-card-name {
+  font-size: 18px;
+  line-height: 22px;
+}
+
+.level-card-action {
+  font-size: 13px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #e6c48a;
+}
+
+@media screen and (min-width: 992px) {
+  .main-menu-container {
+    padding: 48px 56px 56px;
+  }
+
+  .main-menu-title {
+    font-size: 64px;
+    line-height: 68px;
+  }
+
+  .level-card {
+    flex-basis: 280px;
+  }
+
+  .level-card-preview {
+    height: 340px;
+  }
+}

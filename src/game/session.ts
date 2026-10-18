@@ -43,11 +43,16 @@ export const createGameSession = async ({
   callbacks,
   level,
 }: IGameSessionOptions): Promise<IGameSession> => {
-  const view = createGameScene(container, level.outputGamma);
+  const view = createGameScene(container, level);
   const input = createTouchInput();
   const player = createPlayer(physics.world, view.scene);
-  const traffic = createTraffic(physics.world, view.scene, level.cars);
-  const environment = createEnvironment(view.scene, level.buildings);
+  const traffic = createTraffic(
+    physics.world,
+    view.scene,
+    level.cars,
+    level.palette.outputGamma,
+  );
+  const environment = createEnvironment(view.scene, level);
   const collisions = createCollisionSystem({ player, traffic });
 
   await view.warmUp();
@@ -56,6 +61,7 @@ export const createGameSession = async ({
   let isDisposed = false;
   let deltaTimeAccumulator = 0;
   let simulationTime = 0;
+  let distance = 0;
   let lastHud: IGameHudState | null = null;
 
   const step = (dt: number) => {
@@ -76,6 +82,10 @@ export const createGameSession = async ({
       simulationTime,
       isPlayerHittable: !isGameOver,
     });
+
+    if (!isGameOver) {
+      distance += player.speed * dt;
+    }
 
     simulationTime += dt;
     player.syncMesh();
@@ -106,6 +116,7 @@ export const createGameSession = async ({
   const publishHud = () => {
     const hud: IGameHudState = {
       speedKmh: Math.round(player.speed * UNITS.KMH_PER_MPS),
+      score: Math.floor(distance),
       health: Math.ceil(player.health),
       maxHealth: PLAYER.MAX_HEALTH,
       isGameOver: player.isWrecked,
@@ -142,6 +153,7 @@ export const createGameSession = async ({
     restart: () => {
       isPaused = false;
       deltaTimeAccumulator = 0;
+      distance = 0;
       collisions.reset();
       player.reset();
       traffic.reset();

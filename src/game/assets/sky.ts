@@ -21,17 +21,22 @@ import {
 } from "three/tsl";
 
 import { SKY } from "../constants/camera";
+import type { ILevelPalette } from "../levels/types";
 
 const INV_TWO_PI = float(0.15915);
 const INV_PI = float(0.3183);
-
-const horizonColor = vec3(...SKY.HORIZON);
-const zenithColor = vec3(...SKY.ZENITH);
 const starGrid = float(SKY.STAR_GRID);
 const starThreshold = float(SKY.STAR_THRESHOLD);
 const brightStarThreshold = float(SKY.BRIGHT_STAR_THRESHOLD);
 
-const starSkyColor = Fn(() => {
+const createSkyColor = (
+  horizon: ILevelPalette["horizon"],
+  zenith: ILevelPalette["zenith"],
+) => {
+  const horizonColor = vec3(...horizon);
+  const zenithColor = vec3(...zenith);
+
+  return Fn(() => {
   const direction = normalize(positionLocal);
   const lift = smoothstep(float(-0.08), float(0.55), direction.y);
   const gradient = mix(horizonColor, zenithColor, lift);
@@ -70,14 +75,17 @@ const starSkyColor = Fn(() => {
     .mul(lift);
 
   return gradient.add(starGlow);
-});
+  });
+};
 
 export interface IStarSky {
   readonly mesh: Mesh;
   dispose(): void;
 }
 
-export const createStarSky = (): IStarSky => {
+export const createStarSky = (
+  palette: Pick<ILevelPalette, "horizon" | "zenith">,
+): IStarSky => {
   const geometry = new BoxGeometry(1, 1, 1);
 
   const material = new MeshBasicNodeMaterial({
@@ -86,7 +94,7 @@ export const createStarSky = (): IStarSky => {
     fog: false,
   });
 
-  material.colorNode = starSkyColor();
+  material.colorNode = createSkyColor(palette.horizon, palette.zenith)();
 
   const mesh = new Mesh(geometry, material);
 

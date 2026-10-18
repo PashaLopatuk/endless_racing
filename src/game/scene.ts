@@ -1,16 +1,21 @@
 import * as THREE from "three";
 
 import { createStarSky } from "./assets/sky";
-import { CAMERA, GROUND, RENDERER, SCENE_LIGHTING } from "./constants/camera";
+import { CAMERA, GROUND, RENDERER } from "./constants/camera";
+import type { ILevelConfig, ILevelPalette } from "./levels/types";
 import { MOTION_BLUR } from "./constants/postfx";
 import { HALF_PI } from "./constants/world";
 import { getSpeedRatio } from "./util/drive";
 import { smoothNumberValueExponentially } from "./util/math";
 
+import { bloom } from "three/addons/tsl/display/BloomNode.js";
 import { motionBlur } from "three/addons/tsl/display/MotionBlur.js";
 
 import {
+  color,
   float,
+  fog,
+  rangeFogFactor,
   max,
   mix,
   pass,
@@ -39,35 +44,35 @@ const viewportSize = (container: HTMLElement) => ({
   height: Math.max(container.clientHeight, RENDERER.MIN_VIEWPORT_SIZE),
 });
 
-const addLights = (scene: THREE.Scene) => {
-  const { HEMISPHERE, MOON, FILL } = SCENE_LIGHTING;
+const addLights = (scene: THREE.Scene, palette: ILevelPalette) => {
+  const { hemisphere, keyLight, fillLight } = palette;
 
   scene.add(
     new THREE.HemisphereLight(
-      HEMISPHERE.SKY,
-      HEMISPHERE.GROUND,
-      HEMISPHERE.INTENSITY,
+      hemisphere.sky,
+      hemisphere.ground,
+      hemisphere.intensity,
     ),
   );
 
-  const moon = new THREE.DirectionalLight(MOON.COLOR, MOON.INTENSITY);
+  const key = new THREE.DirectionalLight(keyLight.color, keyLight.intensity);
 
-  moon.position.set(...MOON.POSITION);
-  scene.add(moon);
+  key.position.set(...keyLight.position);
+  scene.add(key);
 
-  const fill = new THREE.DirectionalLight(FILL.COLOR, FILL.INTENSITY);
+  const fill = new THREE.DirectionalLight(fillLight.color, fillLight.intensity);
 
-  fill.position.set(...FILL.POSITION);
+  fill.position.set(...fillLight.position);
   scene.add(fill);
 };
 
-const createGround = (): THREE.Mesh<
+const createGround = (groundColor: number): THREE.Mesh<
   THREE.PlaneGeometry,
   THREE.MeshLambertMaterial
 > => {
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(GROUND.WIDTH, GROUND.LENGTH),
-    new THREE.MeshLambertMaterial({ color: GROUND.COLOR, flatShading: true }),
+    new THREE.MeshLambertMaterial({ color: groundColor, flatShading: true }),
   );
   ground.rotation.x = -HALF_PI;
   ground.position.set(0, GROUND.Y, GROUND.Z);
@@ -76,25 +81,27 @@ const createGround = (): THREE.Mesh<
 
 export const createGameScene = (
   container: HTMLElement,
-  outputGammaValue: number,
+  level: ILevelConfig,
 ): IGameScene => {
+  const { palette, terrain } = level;
   const scene = new THREE.Scene();
 
-  scene.background = new THREE.Color(SCENE_LIGHTING.SKY_COLOR);
-
-  scene.fog = new THREE.Fog(
-    SCENE_LIGHTING.SKY_COLOR,
-    SCENE_LIGHTING.FOG_NEAR,
-    SCENE_LIGHTING.FOG_FAR,
+  const haze = new THREE.Color(palette.skyColor).lerp(
+    new THREE.Color(0x7f97b8),
+    0.42,
   );
 
-  addLights(scene);
+  scene.background = new THREE.Color(palette.skyColor);
+  scene.fog = new THREE.Fog(haze, 70, 230);
+  scene.fogNode = fog(color(haze), rangeFogFactor(float(70), float(230)));
 
-  const sky = createStarSky();
+  addLights(scene, palette);
+
+  const sky = createStarSky(palette);
 
   scene.add(sky.mesh);
 
-  const ground = createGround();
+  const ground = createGround(terrain.groundColor);
 
   scene.add(ground);
 
@@ -159,6 +166,7 @@ export const createGameScene = (
     .mul(spatialBlurScale);
 
   const mBlur = motionBlur(beauty, vel, vec4(MOTION_BLUR.SAMPLE_COUNT));
+  const lampBloom = bloom(beauty, 0.42, 0.38, 0.56);
 
   const vignette = screenUV
     .distance(0.5)
@@ -169,8 +177,8 @@ export const createGameScene = (
 
   const renderPipeline = new RenderPipeline(renderer);
 
-  const composed = mBlur.mul(vignette);
-  const outputGamma = float(outputGammaValue);
+  const composed = mBlur.add(lampBloom).mul(vignette);
+  const outputGamma = float(palette.outputGamma);
   const gradedRgb = pow(max(composed.rgb, float(0)), outputGamma);
 
   renderPipeline.outputNode = vec4(gradedRgb, composed.a);

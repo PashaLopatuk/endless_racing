@@ -18,7 +18,7 @@ const fitParallelStripes = (
 };
 
 /** Zebra crossing merged into one mesh; local origin is the strip center on the road. */
-export const createCrosswalkModel = (): IBatchedModel => {
+export const createCrosswalkModel = (markColor: number): IBatchedModel => {
   const { STRIPE, STOP_BAR, ROAD_INSET } = CROSSWALK;
   const batch = createMeshBatch();
   const markWidth = ROAD_WIDTH - ROAD_INSET * 2;
@@ -36,7 +36,7 @@ export const createCrosswalkModel = (): IBatchedModel => {
     batch.addBox({
       size: [STRIPE.WIDTH, ROAD.MARK_THICKNESS, STRIPE.LENGTH],
       position: [startX + index * stripeSpanX, ROAD.MARK_Y, 0],
-      color: CROSSWALK.STRIPE_COLOR,
+      color: markColor,
     });
   }
 
@@ -46,7 +46,7 @@ export const createCrosswalkModel = (): IBatchedModel => {
     batch.addBox({
       size: [markWidth - stopInset * 2, ROAD.MARK_THICKNESS, STOP_BAR.WIDTH],
       position: [0, ROAD.MARK_Y, z],
-      color: CROSSWALK.STOP_BAR_COLOR,
+      color: markColor,
     });
   }
 

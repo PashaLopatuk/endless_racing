@@ -9,7 +9,9 @@ import {
   TRAFFIC,
   type ITrafficSeed,
 } from "./constants/traffic";
+import { NPC_CAR_PALETTE } from "./levels/cars/palette";
 import type { ICarLevelConfig } from "./levels/types";
+import { applyOutputGamma } from "./util/color";
 import { CAR_Y, LANE, VEHICLE_HITBOX } from "./constants/world";
 import { VEHICLE_ACTIVE_COLLISION_TYPES } from "./physics";
 import { getLaneCenterX } from "./util/lane";
@@ -99,18 +101,25 @@ const createNpcBody = (world: RAPIER.World, id: number): RAPIER.RigidBody => {
   return body;
 };
 
+const gradeCarPaint = (index: number, outputGamma: number): number =>
+  applyOutputGamma(
+    NPC_CAR_PALETTE[index % NPC_CAR_PALETTE.length],
+    outputGamma,
+  );
+
 const createNpcSlot = (
   world: RAPIER.World,
   scene: THREE.Scene,
   index: number,
   cars: ICarLevelConfig,
+  outputGamma: number,
 ): INpcSlot => {
   const id = TRAFFIC.FIRST_ID + index;
 
   const model = createVehicleModel({
     kind: cars.kinds[index % cars.kinds.length],
-    paint: cars.paintPalette[index % cars.paintPalette.length],
-    lampBrightness: TRAFFIC.LAMP_BRIGHTNESS_MIN,
+    paint: gradeCarPaint(index, outputGamma),
+    lampBrightness: Math.max(TRAFFIC.LAMP_BRIGHTNESS_MIN, 1.35),
     hasSpotlights: false,
   });
 
@@ -172,9 +181,10 @@ export const createTraffic = (
   world: RAPIER.World,
   scene: THREE.Scene,
   cars: ICarLevelConfig,
+  outputGamma: number,
 ): ITraffic => {
   const slots = Array.from({ length: TRAFFIC.POOL_SIZE }, (_, index) =>
-    createNpcSlot(world, scene, index, cars),
+    createNpcSlot(world, scene, index, cars, outputGamma),
   );
   const slotsById = new Map(slots.map((slot) => [slot.id, slot]));
   const parkedScratch: INpcSlot[] = [];
@@ -184,7 +194,6 @@ export const createTraffic = (
   const pendingImpulses = new Map<number, IImpulse>();
 
   let activeCount = 0;
-  let paintCursor = 0;
   let spawnTimer: number = TRAFFIC.INITIAL_SPAWN_DELAY;
 
   const takeParkedSlot = (): INpcSlot | null => {
@@ -203,9 +212,7 @@ export const createTraffic = (
       return;
     }
 
-    const paint = cars.paintPalette[paintCursor % cars.paintPalette.length];
-
-    paintCursor += 1;
+    const paint = gradeCarPaint(slot.id, outputGamma);
 
     activateSlot(slot, {
       ...seed,

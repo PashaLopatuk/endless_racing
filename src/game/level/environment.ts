@@ -6,12 +6,13 @@ import type { IBatchedModel, IStreetModel } from "../assets/meshBatch";
 import { createCrosswalkModel } from "../assets/crosswalk";
 import { createRoadSegment } from "../assets/road";
 import { createStreetLightModel } from "../assets/streetLight";
+import { createOverheadGuideSign } from "../assets/overheadGuideSign";
 import { createOverheadTrafficLightModel } from "../assets/overheadTrafficLight";
 import { createRoadSignModel } from "../assets/roadSign";
 import { createTrashBinModel } from "../assets/trashBin";
 import { createTrafficLightModel } from "../assets/trafficLight";
-import { OVERHEAD_TRAFFIC_LIGHT, STREET, STREET_ROW } from "../constants/environment/street";
-import type { IBuildingLevelConfig } from "../levels/types";
+import { GUIDE_SIGN, OVERHEAD_TRAFFIC_LIGHT } from "../constants/environment/street";
+import type { ILevelConfig } from "../levels/types";
 import { ROAD_HALF_WIDTH, STREET_SIDE, STREET_SIDES } from "../constants/world";
 import { buildCrosswalkZPositions } from "./crosswalkLayout";
 import { buildRoadSignPlacements } from "./roadSignLayout";
@@ -43,15 +44,15 @@ interface IPlacedModel {
   placement: IPlacement;
 }
 
-const CURB_X = ROAD_HALF_WIDTH + STREET.SIDEWALK_WIDTH;
-
 const facingRoad = (side: number): number =>
   side === STREET_SIDE.RIGHT ? Math.PI : 0;
 
 export const createEnvironment = (
   scene: THREE.Scene,
-  buildings: IBuildingLevelConfig,
+  level: ILevelConfig,
 ): IEnvironment => {
+  const { street: STREET, rows: STREET_ROW, houses } = level.environment;
+  const CURB_X = ROAD_HALF_WIDTH + STREET.SIDEWALK_WIDTH;
   const pieces: IScrollingPiece[] = [];
   const owned: IBatchedModel[] = [];
 
@@ -75,7 +76,7 @@ export const createEnvironment = (
     STREET.ROAD_SEGMENT_COUNT * STREET.ROAD_SEGMENT_LENGTH;
 
   const layRoad = () => {
-    const template = createRoadSegment();
+    const template = createRoadSegment(STREET, level.terrain);
 
     owned.push(template);
 
@@ -92,11 +93,11 @@ export const createEnvironment = (
   };
 
   const layCrosswalks = () => {
-    const template = createCrosswalkModel();
+    const template = createCrosswalkModel(level.terrain.dashColor);
 
     owned.push(template);
 
-    buildCrosswalkZPositions().forEach((z, index) => {
+    buildCrosswalkZPositions(STREET_ROW).forEach((z, index) => {
       const object = index === 0 ? template.object : template.object.clone();
 
       place(object, {
@@ -109,7 +110,7 @@ export const createEnvironment = (
   };
 
   const layOverheadTrafficLights = () => {
-    buildCrosswalkZPositions().forEach((z, index) => {
+    buildCrosswalkZPositions(STREET_ROW).forEach((z, index) => {
       const model = createOverheadTrafficLightModel(
         index + OVERHEAD_TRAFFIC_LIGHT.SEED,
       );
@@ -123,10 +124,23 @@ export const createEnvironment = (
     });
   };
 
+  const layGuideSigns = () => {
+    for (let index = 0; index < GUIDE_SIGN.COUNT; index += 1) {
+      const model = createOverheadGuideSign();
+
+      placeModel(model, {
+        x: 0,
+        z: GUIDE_SIGN.START_Z + index * GUIDE_SIGN.SPACING,
+        rotationY: 0,
+        span: roadLoopSpan,
+      });
+    }
+  };
+
   const layRoadSigns = () => {
     const { SIDEWALK_INSET } = STREET_ROW.ROAD_SIGNS;
 
-    buildRoadSignPlacements().forEach(({ z, side, seed }) => {
+    buildRoadSignPlacements(STREET_ROW).forEach(({ z, side, seed }) => {
       const model = createRoadSignModel(seed);
 
       placeModel(model, {
@@ -143,7 +157,7 @@ export const createEnvironment = (
     const { HOUSES } = STREET_ROW;
     const houseSpan = HOUSES.COUNT_PER_SIDE * HOUSES.SPACING;
 
-    buildTrashBinPlacements().forEach(({ z, side, seed, zone }) => {
+    buildTrashBinPlacements(STREET_ROW).forEach(({ z, side, seed, zone }) => {
       const model = createTrashBinModel(seed);
       const isSidewalk = zone === TRASH_BIN_ZONE.SIDEWALK;
       const x = isSidewalk
@@ -175,7 +189,7 @@ export const createEnvironment = (
     lineRow(BUILDINGS.COUNT_PER_SIDE, (index) => {
       const model = createBuildingModel(
         index + (isRight ? BUILDINGS.SEED_RIGHT : BUILDINGS.SEED_LEFT),
-        buildings,
+        level.buildings,
       );
 
       const x =
@@ -195,6 +209,7 @@ export const createEnvironment = (
     lineRow(HOUSES.COUNT_PER_SIDE, (index) => {
       const model = createHouseModel(
         index + (isRight ? HOUSES.SEED_RIGHT : HOUSES.SEED_LEFT),
+        houses,
       );
 
       const x = side * (CURB_X + model.width / 2 + HOUSES.CURB_GAP);
@@ -254,6 +269,7 @@ export const createEnvironment = (
   layRoad();
   layCrosswalks();
   layOverheadTrafficLights();
+  layGuideSigns();
   layRoadSigns();
   layTrashBins();
   STREET_SIDES.forEach(lineStreetSide);

@@ -5,6 +5,7 @@ import { ASSET_KEY } from "../constants/assets";
 import {
   HEAD_LAMP_SHAPE,
   HEADLIGHT_CONE,
+  HEADLIGHT_POOL,
   HEADLIGHT_SPOT,
   TAIL_LAMP_SHAPE,
   VEHICLE_BLUEPRINTS,
@@ -27,7 +28,7 @@ export interface IVehicleModelOptions {
   kind: VehicleKind;
   paint: number;
   lampBrightness: number;
-  /** Adds real spot lights that illuminate the road. Expensive; meant for the player car only. */
+  /** Headlight cones + spot/pool lights. Player only; NPCs use emissive lamps only. */
   hasSpotlights: boolean;
 }
 
@@ -196,8 +197,8 @@ const addLamps = (
   lamps: ILampLayout,
   materials: ILampMaterials,
   hasSpotlights: boolean,
-): THREE.SpotLight[] => {
-  const spotlights: THREE.SpotLight[] = [];
+): THREE.Light[] => {
+  const dynamicLights: THREE.Light[] = [];
 
   for (const side of MIRRORED_SIDES) {
     const x = side * lamps.halfSpan;
@@ -215,6 +216,10 @@ const addLamps = (
       materials.head,
     );
 
+    if (!hasSpotlights) {
+      continue;
+    }
+
     const beamOrigin: Vec3Tuple = [
       x,
       lamps.headY,
@@ -226,11 +231,21 @@ const addLamps = (
 
     group.add(cone);
 
-    if (hasSpotlights) {
-      spotlights.push(addSpotlight(group, beamOrigin));
-    }
+    dynamicLights.push(addSpotlight(group, beamOrigin));
+
+    const pool = new THREE.PointLight(
+      HEADLIGHT_POOL.COLOR,
+      HEADLIGHT_POOL.INTENSITY,
+      HEADLIGHT_POOL.DISTANCE,
+      HEADLIGHT_POOL.DECAY,
+    );
+
+    pool.position.set(x, HEADLIGHT_POOL.Y, lamps.headZ + HEADLIGHT_POOL.Z_OFFSET);
+    group.add(pool);
+    dynamicLights.push(pool);
   }
-  return spotlights;
+
+  return dynamicLights;
 };
 
 export const createVehicleModel = ({
@@ -285,7 +300,7 @@ export const createVehicleModel = ({
 
   addWheels(object, blueprint.wheels);
 
-  const spotlights = addLamps(
+  const dynamicLights = addLamps(
     object,
     blueprint.lamps,
     lampMaterials,
@@ -323,7 +338,7 @@ export const createVehicleModel = ({
     setLampBrightness,
     dispose: () => {
       ownedMaterials.forEach((material) => material.dispose());
-      spotlights.forEach((spotlight) => spotlight.dispose());
+      dynamicLights.forEach((light) => light.dispose());
       object.removeFromParent();
     },
   };

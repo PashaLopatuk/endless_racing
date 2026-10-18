@@ -25,7 +25,9 @@ export const RGB_ITEM_SIZE = 3;
 export const ASSET_KEY = {
   SEPARATOR: ":",
   BATCH_SOLID_MATERIAL: "batch-solid",
+  BATCH_FACADE_MATERIAL: "batch-facade",
   BATCH_GLOW_MATERIAL: "batch-glow",
+  WET_ASPHALT_MATERIAL: "wet-asphalt",
   ROUNDED_BOX_GEOMETRY: "rounded-box",
   WHEEL_GEOMETRY: "vehicle-wheel",
   WHEEL_MATERIAL: "vehicle-wheel",

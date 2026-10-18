@@ -1,96 +1,11 @@
-export const STREET = {
-  ROAD_SEGMENT_LENGTH: 48,
-  ROAD_SEGMENT_COUNT: 8,
-  /** Segments placed behind the camera so the road never shows a gap while wrapping. */
-  ROAD_SEGMENTS_BEHIND: 1,
-  SIDEWALK_WIDTH: 2.6,
-  DESPAWN_Z: -72,
-} as const;
-
-export const STREET_ROW = {
-  BUILDINGS: {
-    COUNT_PER_SIDE: 12,
-    SPACING: 28,
-    START_Z: -48,
-    GAP: 1.2,
-    SEED_LEFT: 1,
-    SEED_RIGHT: 100,
-  },
-  HOUSES: {
-    COUNT_PER_SIDE: 12,
-    SPACING: 18,
-    START_Z: -24,
-    ROW_DEPTH: 10,
-    CURB_GAP: 0.45,
-    SEED_LEFT: 400,
-    SEED_RIGHT: 500,
-  },
-  TRAFFIC_LIGHTS: {
-    COUNT_PER_SIDE: 7,
-    SPACING: 48,
-    START_Z: -16,
-    CURB_OFFSET: 1.15,
-    SEED_LEFT: 0,
-    SEED_RIGHT: 20,
-  },
-  STREET_LIGHTS: {
-    COUNT_PER_SIDE: 12,
-    SPACING: 28,
-    START_Z: -22,
-    /** Distance from road center to pole, on the sidewalk strip. */
-    SIDEWALK_INSET: 2.05,
-    SEED_LEFT: 60,
-    SEED_RIGHT: 160,
-  },
-  CROSSWALKS: {
-    COUNT: 4,
-    SEED: 41803,
-    START_Z: 24,
-    MIN_SPACING: 62,
-    SPACING_JITTER: 48,
-  },
-  ROAD_SIGNS: {
-    COUNT: 20,
-    SEED: 59127,
-    START_Z: -6,
-    MIN_SPACING: 14,
-    SPACING_JITTER: 20,
-    /** Distance from road center to the sign post on the sidewalk. */
-    SIDEWALK_INSET: 1.55,
-  },
-  TRASH_BINS: {
-    SIDEWALK: {
-      COUNT: 5,
-      SEED: 33491,
-      START_Z: 4,
-      MIN_SPACING: 52,
-      SPACING_JITTER: 38,
-      /** Distance from road center to bin on the sidewalk strip. */
-      INSET: 1.25,
-    },
-    BETWEEN_HOUSES: {
-      SEED: 8821,
-      /** Chance to place a bin in each gap between neighbouring houses. */
-      GAP_CHANCE: 0.22,
-      Z_JITTER: [-1.2, 1.2] as const,
-      /** Offset from curb into the row between houses and towers. */
-      ROW_INSET: 6.2,
-    },
-  },
-} as const;
-
 export const ROAD = {
-  ASPHALT_COLOR: 0x242a34,
   ASPHALT_THICKNESS: 0.2,
-  SIDEWALK_COLOR: 0x34383f,
   SIDEWALK_HEIGHT: 0.28,
   SIDEWALK_Y: 0.04,
   MARK_THICKNESS: 0.025,
   MARK_Y: 0.02,
-  EDGE_COLOR: 0xd4c06a,
   EDGE_WIDTH: 0.09,
   EDGE_INSET: 0.16,
-  DASH_COLOR: 0xeae6dc,
   DASH_WIDTH: 0.1,
   DASH_LENGTH: 2.4,
   DASH_STRIDE: 8,
@@ -98,8 +13,6 @@ export const ROAD = {
 } as const;
 
 export const CROSSWALK = {
-  STRIPE_COLOR: ROAD.DASH_COLOR,
-  STOP_BAR_COLOR: ROAD.DASH_COLOR,
   STRIPE: {
     /** Line thickness across the road (local X). */
     WIDTH: 0.42,
@@ -140,6 +53,21 @@ export const OVERHEAD_TRAFFIC_LIGHT = {
   /** Lane indices (0-based) that get a signal head pair. */
   HEAD_LANES: [1, 2],
   SEED: 880,
+} as const;
+
+export const GUIDE_SIGN = {
+  COUNT: 4,
+  START_Z: 36,
+  SPACING: 96,
+  SPAN_PAST_EDGE: 0.35,
+  POLE: { SIZE: [0.16, 6.2, 0.16] as const, Y: 3.1, COLOR: 0x2a2e33 },
+  BEAM_Y: 6.35,
+  BEAM_SIZE: [0, 0.16, 0.16] as const,
+  PANEL_Y: 5.55,
+  PANEL_WIDTH: 4.4,
+  PANEL_HEIGHT: 1.45,
+  LABELS: ["Downtown", "Riverside"] as const,
+  COLORS: ["#178a45", "#1c6eb5"] as const,
 } as const;
 
 export const STREET_LIGHT = {

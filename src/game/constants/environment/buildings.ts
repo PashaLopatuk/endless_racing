@@ -12,14 +12,6 @@ export const BUILDING_STYLE = {
 
 export type BuildingStyle = ValueOf<typeof BUILDING_STYLE>;
 
-export const BUILDING_STYLE_WEIGHTS = [
-  { style: BUILDING_STYLE.SLAB, weight: 3 },
-  { style: BUILDING_STYLE.SETBACK, weight: 2 },
-  { style: BUILDING_STYLE.WAREHOUSE, weight: 2 },
-  { style: BUILDING_STYLE.OFFICE, weight: 2 },
-  { style: BUILDING_STYLE.APARTMENT, weight: 3 },
-] as const;
-
 /** Window rows are laid along the road-facing facade (local +X), spread over part of the building depth. */
 export const FACADE = {
   WIDE_DEPTH: 12,
