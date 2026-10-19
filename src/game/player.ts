@@ -13,6 +13,7 @@ import type { ImpactKind } from "./types";
 import {
   frontPivotPose,
   getSpeedRatio,
+  getEffectiveSpeedResponse,
   resolveSpeedTarget,
   resolveSteerTarget,
   type ICarPose,
@@ -174,7 +175,7 @@ export const createPlayer = (
     state.speed = smoothNumberValueExponentially(
       state.speed,
       targetSpeed,
-      PLAYER.SPEED_RESPONSE,
+      getEffectiveSpeedResponse(state.speed),
       dt,
     );
   };

@@ -478,7 +478,8 @@ const findLeadNpcIn = (
 
 const getPlayerSpeedRatio = (playerSpeed: number): number =>
   clamp(
-    (playerSpeed - PLAYER.MIN_SPEED) / (PLAYER.MAX_SPEED - PLAYER.MIN_SPEED),
+    (playerSpeed - PLAYER.MIN_SPEED) /
+      (PLAYER.MAX_BASE_SPEED - PLAYER.MIN_SPEED),
     0,
     1,
   );

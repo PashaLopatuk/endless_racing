@@ -1,7 +1,6 @@
 import { getStorage } from "../util/storage";
 
-const SOUND_ENABLED_KEY = "endless-racing-sound-enabled";
-const LEGACY_SOUND_ENABLED_KEY = "react-sounds-enabled";
+export const SOUND_ENABLED_KEY = "sound-enabled";
 
 export const readSoundEnabled = (): boolean => {
   try {
@@ -10,12 +9,6 @@ export const readSoundEnabled = (): boolean => {
 
     if (stored !== null) {
       return stored !== "false";
-    }
-
-    const legacy = storage.getItem(LEGACY_SOUND_ENABLED_KEY);
-
-    if (legacy !== null) {
-      return legacy !== "false";
     }
 
     return true;

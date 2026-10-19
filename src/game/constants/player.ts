@@ -8,9 +8,15 @@ export const PLAYER = {
 
   BASE_SPEED: 22,
   MIN_SPEED: 14,
-  MAX_SPEED: 46,
+  MAX_SPEED: 70,
+  /** Visual-effects ceiling and taper onset — FOV, motion blur, camera all max out here. */
+  MAX_BASE_SPEED: 46,
+  SPEED_EXCEED: 24,
   SPEED_PER_PIXEL: 0.08,
   SPEED_RESPONSE: 3.5,
+
+  /** Smoothing rate at absolute top speed — much lower than SPEED_RESPONSE. */
+  SPEED_HIGH_RESPONSE: 0.35,
   GAME_OVER_DECEL: Infinity,
 
   STEER_METERS_PER_PIXEL: 0.038,
