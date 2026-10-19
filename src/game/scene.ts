@@ -88,7 +88,10 @@ const createFogHaze = (palette: ILevelPalette): THREE.Color => {
     return haze;
   }
 
-  return new THREE.Color(palette.skyColor).lerp(new THREE.Color(0x7f97b8), 0.42);
+  return new THREE.Color(palette.skyColor).lerp(
+    new THREE.Color(0x7f97b8),
+    0.42,
+  );
 };
 
 const createFogFactorNode = (palette: ILevelPalette) => {
@@ -103,10 +106,9 @@ const createFogFactorNode = (palette: ILevelPalette) => {
   return linear;
 };
 
-const createGround = (groundColor: number): THREE.Mesh<
-  THREE.PlaneGeometry,
-  THREE.MeshLambertMaterial
-> => {
+const createGround = (
+  groundColor: number,
+): THREE.Mesh<THREE.PlaneGeometry, THREE.MeshLambertMaterial> => {
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(GROUND.WIDTH, GROUND.LENGTH),
     new THREE.MeshLambertMaterial({ color: groundColor, flatShading: true }),

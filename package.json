@@ -11,8 +11,10 @@
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.21.0",
+    "howler": "^2.2.4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-sounds": "^1.0.30",
     "three": "^0.186.1"
   },
   "devDependencies": {

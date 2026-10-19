@@ -56,7 +56,9 @@ export const createGameSession = async ({
   const environment = createEnvironment(view.scene, level);
   const collisions = createCollisionSystem({ player, traffic });
 
+  console.time("view.warmUp");
   await view.warmUp();
+  console.timeEnd("view.warmUp");
 
   let isPaused = false;
   let isDisposed = false;
@@ -70,13 +72,7 @@ export const createGameSession = async ({
 
     player.update(isGameOver ? IDLE_GESTURE : input.read(), dt, isGameOver);
 
-    traffic.update(
-      player.speed,
-      player.worldZ,
-      player.x,
-      dt,
-      !isGameOver,
-    );
+    traffic.update(player.speed, player.worldZ, player.x, dt, !isGameOver);
 
     environment.scroll(player.speed * dt);
 

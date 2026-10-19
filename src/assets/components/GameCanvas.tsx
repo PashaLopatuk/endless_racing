@@ -8,6 +8,8 @@ import { createGame } from "../../game/game";
 import type { ILevelConfig } from "../../game/levels";
 import type { IGameController, IGameHudState } from "../../game/types";
 
+import { SoundToggleButton } from "./SoundToggleButton";
+
 import "./GameCanvas.css";
 
 const INITIAL_HUD: IGameHudState = {
@@ -35,6 +37,7 @@ export const GameCanvas = ({ level, onExit }: Props) => {
 
   useEffect(() => {
     const container = mountRef.current;
+
     if (!container) {
       return;
     }
@@ -95,10 +98,11 @@ export const GameCanvas = ({ level, onExit }: Props) => {
     hud.maxHealth > 0
       ? (Math.max(0, hud.health) / hud.maxHealth) * UNITS.PERCENT
       : 0;
+
   const isPaused = hud.isPaused && !hud.isGameOver;
   const isGameOverScreen = !isLoading && !hasFailed && hud.isGameOver;
-  const isHudVisible =
-    !isLoading && !hasFailed && !isPaused && !hud.isGameOver;
+  const isHudVisible = !isLoading && !hasFailed && !isPaused && !hud.isGameOver;
+
   return (
     <div className="game-canvas-container">
       <div className="game-mount" ref={mountRef} />
@@ -151,6 +155,9 @@ export const GameCanvas = ({ level, onExit }: Props) => {
 
       {isPaused && !isLoading && !hasFailed && (
         <div className="pause-screen">
+          <SoundToggleButton
+            buttonClassName="game-pause-button pause-screen-sound-button"
+          />
           <button
             type="button"
             className="pause-screen-resume"
@@ -172,17 +179,23 @@ export const GameCanvas = ({ level, onExit }: Props) => {
             className="game-over-retry"
             onClick={() => gameRef.current?.restart()}
           >
-            <span className="game-over-kicker">{HUD_TEXT.GAME_OVER_KICKER}</span>
+            <span className="game-over-kicker">
+              {HUD_TEXT.GAME_OVER_KICKER}
+            </span>
             <span className="game-over-title">{HUD_TEXT.GAME_OVER_TITLE}</span>
             <span className="game-over-stats">
               <span className="game-over-stat">
                 <span className="game-over-stat-value">{hud.score}</span>
-                <span className="game-over-stat-label">{HUD_TEXT.SCORE_UNIT}</span>
+                <span className="game-over-stat-label">
+                  {HUD_TEXT.SCORE_UNIT}
+                </span>
               </span>
               <span className="game-over-stat-divider" aria-hidden="true" />
               <span className="game-over-stat">
                 <span className="game-over-stat-value">{bestScore}</span>
-                <span className="game-over-stat-label">{HUD_TEXT.BEST_SCORE}</span>
+                <span className="game-over-stat-label">
+                  {HUD_TEXT.BEST_SCORE}
+                </span>
               </span>
             </span>
             <span className="game-over-hint">{HUD_TEXT.GAME_OVER_HINT}</span>
