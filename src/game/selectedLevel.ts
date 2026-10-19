@@ -1,3 +1,4 @@
+import { getStorage } from "../util/storage";
 import { LEVELS } from "./levels";
 
 const SELECTED_LEVEL_KEY = "endless-racing-selected-level";
@@ -7,7 +8,9 @@ const isKnownLevelId = (levelId: string): boolean =>
 
 export const readSelectedLevelId = (): string | null => {
   try {
-    const levelId = localStorage.getItem(SELECTED_LEVEL_KEY);
+    const storage = getStorage();
+
+    const levelId = storage.getItem(SELECTED_LEVEL_KEY);
 
     if (!levelId || !isKnownLevelId(levelId)) {
       return null;
@@ -25,7 +28,9 @@ export const storeSelectedLevelId = (levelId: string): void => {
       return;
     }
 
-    localStorage.setItem(SELECTED_LEVEL_KEY, levelId);
+    const storage = getStorage();
+
+    storage.setItem(SELECTED_LEVEL_KEY, levelId);
   } catch {
     // Private browsing can block storage; menu still works for this session.
   }

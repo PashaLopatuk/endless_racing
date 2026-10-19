@@ -1,8 +1,11 @@
+import { getStorage } from "../util/storage";
+
 const BEST_SCORE_KEY = "endless-racing-best-score";
 
 export const readBestScore = (): number => {
   try {
-    const value = Number(localStorage.getItem(BEST_SCORE_KEY));
+    const storage = getStorage();
+    const value = Number(storage.getItem(BEST_SCORE_KEY));
 
     if (!Number.isFinite(value) || value <= 0) {
       return 0;
@@ -16,7 +19,9 @@ export const readBestScore = (): number => {
 
 export const storeBestScore = (score: number): void => {
   try {
-    localStorage.setItem(BEST_SCORE_KEY, String(Math.floor(score)));
+    const storage = getStorage();
+
+    storage.setItem(BEST_SCORE_KEY, String(Math.floor(score)));
   } catch {
     // Private browsing can block storage; the current run still shows the score.
   }

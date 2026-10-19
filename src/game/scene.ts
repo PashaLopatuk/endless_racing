@@ -2,11 +2,12 @@ import * as THREE from "three";
 
 import { createLevelSky } from "./assets/sky";
 import { CAMERA, GROUND, RENDERER } from "./constants/camera";
+import { PLAYER } from "./constants/player";
 import type { ILevelConfig, ILevelPalette } from "./levels/types";
 import { MOTION_BLUR } from "./constants/postfx";
 import { HALF_PI } from "./constants/world";
 import { getSpeedRatio } from "./util/drive";
-import { smoothNumberValueExponentially } from "./util/math";
+import { clamp, smoothNumberValueExponentially } from "./util/math";
 
 import { bloom } from "three/addons/tsl/display/BloomNode.js";
 import { motionBlur } from "three/addons/tsl/display/MotionBlur.js";
@@ -88,7 +89,10 @@ const createFogHaze = (palette: ILevelPalette): THREE.Color => {
     return haze;
   }
 
-  return new THREE.Color(palette.skyColor).lerp(new THREE.Color(0x7f97b8), 0.42);
+  return new THREE.Color(palette.skyColor).lerp(
+    new THREE.Color(0x7f97b8),
+    0.42,
+  );
 };
 
 const createFogFactorNode = (palette: ILevelPalette) => {
@@ -103,10 +107,9 @@ const createFogFactorNode = (palette: ILevelPalette) => {
   return linear;
 };
 
-const createGround = (groundColor: number): THREE.Mesh<
-  THREE.PlaneGeometry,
-  THREE.MeshLambertMaterial
-> => {
+const createGround = (
+  groundColor: number,
+): THREE.Mesh<THREE.PlaneGeometry, THREE.MeshLambertMaterial> => {
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(GROUND.WIDTH, GROUND.LENGTH),
     new THREE.MeshLambertMaterial({ color: groundColor, flatShading: true }),
@@ -223,6 +226,13 @@ export const createGameScene = (
 
   renderPipeline.outputNode = vec4(gradedRgb, composed.a);
 
+  // ── Screen-space shake state (applied after post-processing) ──
+  let shakeElapsed = 0;
+  let shakeIntensity = 0;
+
+  // Hint the browser to GPU-accelerate transforms on the canvas.
+  renderer.domElement.style.willChange = "transform";
+
   return {
     scene,
     follow: (playerX, speed, dt) => {
@@ -237,6 +247,7 @@ export const createGameScene = (
         dt,
       );
 
+      // ── Stable camera position (no shake here — keeps motion blur clean) ──
       camera.position.x = smoothNumberValueExponentially(
         camera.position.x,
         playerX *
@@ -253,8 +264,59 @@ export const createGameScene = (
         dt,
       );
 
+      camera.position.y = CAMERA.HEIGHT;
+
       camera.lookAt(camera.position.x, CAMERA.LOOK_HEIGHT, CAMERA.LOOK_AHEAD);
 
+      // ── Compute shake intensity (0→1, squared curve) ──
+      // Shake only activates above MAX_BASE_SPEED.
+      const shakeRange = PLAYER.MAX_SPEED - PLAYER.MAX_BASE_SPEED;
+      const shakeT = clamp(
+        (speed - PLAYER.MAX_BASE_SPEED) / shakeRange,
+        0,
+        1,
+      );
+
+      const targetIntensity = shakeT * shakeT;
+
+      shakeIntensity = smoothNumberValueExponentially(
+        shakeIntensity,
+        targetIntensity,
+        CAMERA.SHAKE_SMOOTH_RATE,
+        dt,
+      );
+
+      // ── Compute screen-space shake offset (CSS pixels) ──
+      if (shakeIntensity > 0.001) {
+        shakeElapsed += dt;
+
+        const t = shakeElapsed;
+        const lo = CAMERA.SHAKE_FREQ_LO;
+        const mid = CAMERA.SHAKE_FREQ_MID;
+        const hi = CAMERA.SHAKE_FREQ_HI;
+
+        // Three layered oscillator pairs at irrational ratios — non-repeating
+        // X: mostly mid + hi, less low (lateral is secondary)
+        const px =
+          Math.sin(t * lo * 0.83) * 0.15 +
+          Math.sin(t * mid * 1.317) * 0.45 +
+          Math.sin(t * hi * 0.891) * 0.40;
+
+        // Y: all three layers, heavy on mid + hi (road bumps dominate)
+        const py =
+          Math.sin(t * lo * 0.793) * 0.20 +
+          Math.cos(t * mid * 1.131) * 0.40 +
+          Math.sin(t * hi * 1.037) * 0.40;
+
+        const offsetX = px * CAMERA.SHAKE_MAX_PX_X * shakeIntensity;
+        const offsetY = py * CAMERA.SHAKE_MAX_PX_Y * shakeIntensity;
+
+        renderer.domElement.style.transform = `translate3d(${offsetX.toFixed(2)}px,${offsetY.toFixed(2)}px,0)`;
+      } else {
+        renderer.domElement.style.transform = "";
+      }
+
+      // ── FOV ──
       const targetSpeedFov =
         CAMERA.FOV + (CAMERA.FOV_MAX - CAMERA.FOV) * speedRatio;
 
@@ -295,6 +357,8 @@ export const createGameScene = (
       renderPipeline.render();
     },
     dispose: () => {
+      renderer.domElement.style.willChange = "";
+      renderer.domElement.style.transform = "";
       sky.dispose();
       ground.geometry.dispose();
       ground.material.dispose();

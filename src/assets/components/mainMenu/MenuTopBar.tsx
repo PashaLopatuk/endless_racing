@@ -1,5 +1,6 @@
+import { SoundToggleButton } from "../SoundToggleButton";
 import { GlassIconButton } from "./GlassIconButton";
-import { MenuIcon, SettingsIcon } from "./icons";
+import { MenuIcon } from "./icons";
 
 interface Props {
   tierLabel: string;
@@ -23,8 +24,6 @@ export const MenuTopBar = ({ tierLabel, onOpenLevelSelect }: Props) => (
       </div>
     </div>
 
-    <GlassIconButton ariaLabel="Settings and audio" variant="circle">
-      <SettingsIcon className="glass-icon-button__icon" />
-    </GlassIconButton>
+    <SoundToggleButton />
   </header>
 );

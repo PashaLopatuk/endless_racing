@@ -1,23 +1,12 @@
-import { useState } from "react";
-
-import { GameCanvas } from "./assets/components/GameCanvas";
-import { MainMenu } from "./assets/components/mainMenu/MainMenu";
-import { getLevelConfig } from "./game/levels";
+import { SoundProvider } from "react-sounds";
+import { MainSynthwaveTheme } from "./assets/audio";
+import { Game } from "./Game";
 
 const App = () => {
-  const [activeLevelId, setActiveLevelId] = useState<string | null>(null);
-
   return (
-    <div className="app-shell">
-      {activeLevelId ? (
-        <GameCanvas
-          level={getLevelConfig(activeLevelId)}
-          onExit={() => setActiveLevelId(null)}
-        />
-      ) : (
-        <MainMenu onSelectLevel={setActiveLevelId} />
-      )}
-    </div>
+    <SoundProvider preload={[MainSynthwaveTheme]}>
+      <Game />
+    </SoundProvider>
   );
 };
 

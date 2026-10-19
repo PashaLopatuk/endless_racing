@@ -14,6 +14,19 @@ export const CAMERA = {
   FOLLOW_X_RATIO: 0.7,
   FOLLOW_X_SPEED_RATIO: 0.5,
   MAX_SPEED_DISTANCE: 8,
+
+  /** Max lateral shake at top speed (CSS px). */
+  SHAKE_MAX_PX_X: 1.6,
+  /** Max vertical shake at top speed (CSS px) — dominant axis like road bumps. */
+  SHAKE_MAX_PX_Y: 1.0,
+  /** Low-frequency suspension sway (rad/s, ~2.7 Hz). */
+  SHAKE_FREQ_LO: 7,
+  /** Mid-frequency road-texture rumble (rad/s, ~5 Hz). */
+  SHAKE_FREQ_MID: 15,
+  /** High-frequency drivetrain buzz (rad/s, ~8.4 Hz). */
+  SHAKE_FREQ_HI: 20,
+  /** How quickly shake intensity ramps up / down. */
+  SHAKE_SMOOTH_RATE: 2,
 } as const;
 
 export const RENDERER = {

@@ -30,7 +30,10 @@ export const LevelSelectCard = ({
     onClick={onSelect}
   >
     <span className="level-select-card__hero">
-      <LevelArtPreview level={level} className="level-art-preview level-art-preview--card" />
+      <LevelArtPreview
+        level={level}
+        className="level-art-preview level-art-preview--card"
+      />
       <span className="level-select-card__hero-gradient" />
       <span className="level-select-card__badges">
         <span
@@ -38,7 +41,7 @@ export const LevelSelectCard = ({
         >
           {meta.biomeTag}
         </span>
-        <span className="level-select-card__rating">{meta.rating}</span>
+        {/*<span className="level-select-card__rating">{meta.rating}</span>*/}
       </span>
       <span
         className={`level-select-card__status${isSelected ? " level-select-card__status--current" : ""}`}
@@ -62,7 +65,7 @@ export const LevelSelectCard = ({
     </span>
 
     <span className="level-select-card__footer">
-      <span className="level-select-card__stats">
+      {/*<span className="level-select-card__stats">
         <span>
           HAZARD:{" "}
           <strong className={`level-select-card__hazard--${meta.hazardTone}`}>
@@ -75,7 +78,7 @@ export const LevelSelectCard = ({
         <span>
           SURFACE: <strong>{meta.surface}</strong>
         </span>
-      </span>
+      </span>*/}
       <span
         className={`level-select-card__action${isSelected ? " level-select-card__action--selected" : ""}`}
       >
