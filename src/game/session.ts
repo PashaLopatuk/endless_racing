@@ -11,6 +11,7 @@ import type { ILevelConfig } from "./levels";
 import type { IPhysicsWorld } from "./physics";
 import { createPlayer } from "./player";
 import { createGameScene } from "./scene";
+import { readDynamicLightsEnabled } from "./settings";
 import { createTraffic } from "./traffic";
 import type { IGameCallbacks, IGameHudState } from "./types";
 
@@ -46,10 +47,12 @@ export const createGameSession = async ({
   const gameScene = createGameScene(container, level);
   const input = createTouchInput();
   const skyMode = level.palette.skyMode ?? "night";
+  const dynamicLightsEnabled = readDynamicLightsEnabled();
   const player = createPlayer(
     physics.world,
     gameScene.objectScene,
     skyMode,
+    dynamicLightsEnabled,
   );
   const traffic = createTraffic(
     physics.world,

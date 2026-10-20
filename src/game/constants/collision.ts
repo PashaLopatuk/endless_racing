@@ -3,15 +3,15 @@ import type { ImpactKind } from "../types";
 import { IMPACT_KIND } from "./kinds";
 
 export const IMPACT_DAMAGE: Readonly<Record<ImpactKind, number>> = {
-  [IMPACT_KIND.SIDE]: 4,
-  [IMPACT_KIND.FRONT]: 26,
-  [IMPACT_KIND.REAR]: 20,
+  [IMPACT_KIND.SIDE]: 20,
+  [IMPACT_KIND.FRONT]: 56,
+  [IMPACT_KIND.REAR]: 30,
 };
 
 export const IMPACT_SPEED_LOSS: Readonly<Record<ImpactKind, number>> = {
-  [IMPACT_KIND.SIDE]: 3,
-  [IMPACT_KIND.FRONT]: 16,
-  [IMPACT_KIND.REAR]: 16,
+  [IMPACT_KIND.SIDE]: 10,
+  [IMPACT_KIND.FRONT]: 46,
+  [IMPACT_KIND.REAR]: 46,
 };
 
 export const COLLISION = {

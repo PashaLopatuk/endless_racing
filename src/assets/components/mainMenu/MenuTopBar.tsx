@@ -1,13 +1,18 @@
 import { SoundToggleButton } from "../SoundToggleButton";
 import { GlassIconButton } from "./GlassIconButton";
-import { MenuIcon } from "./icons";
+import { MenuIcon, SettingsIcon } from "./icons";
 
 interface Props {
   tierLabel: string;
   onOpenLevelSelect: () => void;
+  onOpenSettings?: () => void;
 }
 
-export const MenuTopBar = ({ tierLabel, onOpenLevelSelect }: Props) => (
+export const MenuTopBar = ({
+  tierLabel,
+  onOpenLevelSelect,
+  onOpenSettings,
+}: Props) => (
   <header className="menu-top-bar">
     <GlassIconButton
       ariaLabel="Open level selector"
@@ -24,6 +29,17 @@ export const MenuTopBar = ({ tierLabel, onOpenLevelSelect }: Props) => (
       </div>
     </div>
 
-    <SoundToggleButton />
+    <div className="menu-top-bar__actions">
+      {onOpenSettings && (
+        <GlassIconButton
+          ariaLabel="Open settings"
+          variant="circle"
+          onClick={onOpenSettings}
+        >
+          <SettingsIcon className="glass-icon-button__icon" />
+        </GlassIconButton>
+      )}
+      <SoundToggleButton />
+    </div>
   </header>
 );
