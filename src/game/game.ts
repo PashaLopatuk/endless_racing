@@ -141,6 +141,7 @@ export const createGame = (
 
       if (isDisposed || generation !== bootGeneration) {
         disposePhysicsAsync(physics);
+
         return;
       }
 
@@ -158,6 +159,7 @@ export const createGame = (
     dispose: () => {
       isDisposed = true;
       bootGeneration += 1;
+
       shutdown();
     },
     restart: () => {
