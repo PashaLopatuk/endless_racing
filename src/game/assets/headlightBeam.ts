@@ -17,7 +17,7 @@ import {
   GEOMETRY_ATTRIBUTE,
   RGB_ITEM_SIZE,
 } from "../constants/assets";
-import { HEADLIGHT_CONE } from "../constants/vehicles";
+import { HEADLIGHT_CONE, HEADLIGHT_POOL } from "../constants/vehicles";
 import { HALF_PI } from "../constants/world";
 import { clamp } from "../util/math";
 import { sharedAssets } from "./sharedAssets";
@@ -103,6 +103,66 @@ export const createHeadlightCone = (): THREE.Mesh => {
   const material = sharedAssets.material(
     ASSET_KEY.HEADLIGHT_CONE_MATERIAL,
     createConeMaterial,
+  );
+
+  return new THREE.Mesh(geometry, material);
+};
+
+const createGroundPoolGeometry = (): THREE.BufferGeometry => {
+  const width = 0.95;
+  const length = 3.6;
+  const geometry = new THREE.PlaneGeometry(width, length, 4, 8);
+  geometry.rotateX(-HALF_PI);
+  geometry.translate(0, 0, length / 2);
+
+  const position = geometry.getAttribute(GEOMETRY_ATTRIBUTE.POSITION);
+  const colors = new Float32Array(position.count * RGB_ITEM_SIZE);
+  const pool = new THREE.Color(HEADLIGHT_POOL.COLOR).multiplyScalar(0.9);
+
+  for (let index = 0; index < position.count; index += 1) {
+    const z = clamp(position.getZ(index) / length, 0, 1);
+    const x = Math.abs(position.getX(index) / (width / 2));
+    const fadeZ = Math.pow(1 - z, 1.4) * Math.min(1, z * 6);
+    const fadeX = Math.pow(Math.max(0, 1 - x), 1.5);
+    const fade = fadeZ * fadeX;
+    const offset = index * RGB_ITEM_SIZE;
+
+    colors[offset] = pool.r * fade;
+    colors[offset + 1] = pool.g * fade;
+    colors[offset + 2] = pool.b * fade;
+  }
+
+  geometry.setAttribute(
+    GEOMETRY_ATTRIBUTE.COLOR,
+    new THREE.BufferAttribute(colors, RGB_ITEM_SIZE),
+  );
+
+  return geometry;
+};
+
+const createGroundPoolMaterial = (): MeshBasicNodeMaterial => {
+  const material = new MeshBasicNodeMaterial({
+    vertexColors: true,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
+
+  material.colorNode = vertexColor();
+
+  return material;
+};
+
+/** Cheap fake ground light pool on the road in front of headlights. Shared geometry and material. */
+export const createHeadlightGroundPool = (): THREE.Mesh => {
+  const geometry = sharedAssets.geometry(
+    ASSET_KEY.HEADLIGHT_POOL_GEOMETRY,
+    createGroundPoolGeometry,
+  );
+  const material = sharedAssets.material(
+    ASSET_KEY.HEADLIGHT_POOL_MATERIAL,
+    createGroundPoolMaterial,
   );
 
   return new THREE.Mesh(geometry, material);

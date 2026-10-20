@@ -350,6 +350,12 @@ export const HEAD_LAMP_SHAPE: IRoundedShape = {
   radius: 0.04,
 };
 
+/** Front amber marker segment adjacent to each headlamp (emissive skin only). */
+export const FRONT_AMBER_LAMP_SHAPE: IRoundedShape = {
+  size: [0.12, 0.14, 0.08],
+  radius: 0.03,
+};
+
 /** Rear amber / DRL segment under each red tail lamp (emissive skin only). */
 export const REAR_DAY_LAMP_SHAPE: IRoundedShape = {
   size: [0.2, 0.1, 0.09],
@@ -421,7 +427,12 @@ export const VEHICLE_STYLE = {
   GLASS: { COLOR: 0x24303a, ROUGHNESS: 0.18, METALNESS: 0.04 },
   TRIM: { COLOR: 0x2a241e, ROUGHNESS: 0.46, METALNESS: 0.12 },
   LAMP: { ROUGHNESS: 0.32, METALNESS: 0 },
-  LAMP_COLOR: { TAIL: 0xff2d2d, HEAD: 0xfff3cf, SIGN: 0xfff6d8 },
+  LAMP_COLOR: {
+    TAIL: 0xff2d2d,
+    HEAD: 0xfff3cf,
+    AMBER: 0xffaa25,
+    SIGN: 0xfff6d8,
+  },
   HEAD_BRIGHTNESS: { MIN: 2.2, RATIO: 2.4 },
   REAR_AMBER_BRIGHTNESS: { MIN: 1.45, RATIO: 1.2 },
   SIGN_BRIGHTNESS_MIN: 0.8,

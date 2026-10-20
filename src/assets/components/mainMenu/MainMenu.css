@@ -100,6 +100,12 @@
     align-items: center;
 }
 
+.menu-top-bar__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .menu-tier-pill {
     display: flex;
     align-items: center;

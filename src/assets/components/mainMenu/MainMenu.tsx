@@ -9,6 +9,7 @@ import {
 import { ExpandLevelSelectHint } from "./ExpandLevelSelectHint";
 import { getMenuLevelMeta } from "./menuLevelMeta";
 import { LevelSelectScreen } from "./LevelSelectScreen";
+import { SettingsScreen } from "../settings/SettingsScreen";
 import { MenuBackdrop } from "./MenuBackdrop";
 import { MenuTopBar } from "./MenuTopBar";
 import { PlayLaunchButton } from "./PlayLaunchButton";
@@ -31,6 +32,7 @@ const wrapIndex = (index: number, length: number): number => {
 export const MainMenu = ({ onSelectLevel }: Props) => {
   const [activeIndex, setActiveIndex] = useState(getInitialMenuLevelIndex);
   const [isLevelSelectOpen, setIsLevelSelectOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const level = LEVELS[activeIndex] ?? LEVELS[0];
   const meta = getMenuLevelMeta(level.id);
@@ -46,6 +48,14 @@ export const MainMenu = ({ onSelectLevel }: Props) => {
 
   const closeLevelSelect = useCallback(() => {
     setIsLevelSelectOpen(false);
+  }, []);
+
+  const openSettings = useCallback(() => {
+    setIsSettingsOpen(true);
+  }, []);
+
+  const closeSettings = useCallback(() => {
+    setIsSettingsOpen(false);
   }, []);
 
   const selectIndex = useCallback((index: number) => {
@@ -72,6 +82,7 @@ export const MainMenu = ({ onSelectLevel }: Props) => {
         <MenuTopBar
           tierLabel={`APEX // TIER ${activeIndex + 1}`}
           onOpenLevelSelect={openLevelSelect}
+          onOpenSettings={openSettings}
         />
 
         <PlayLaunchButton speedwayLabel={meta.speedwayLabel} onLaunch={launchCurrent} />
@@ -100,6 +111,11 @@ export const MainMenu = ({ onSelectLevel }: Props) => {
             window.setTimeout(closeLevelSelect, 240);
           }}
           onConfirmRace={confirmRace}
+        />
+
+        <SettingsScreen
+          isOpen={isSettingsOpen}
+          onClose={closeSettings}
         />
       </main>
     </div>

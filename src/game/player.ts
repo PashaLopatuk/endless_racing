@@ -8,7 +8,9 @@ import { PLAYER, PLAYER_VEHICLE_KIND } from "./constants/player";
 import { NPC_BODY } from "./constants/traffic";
 import { CAR_Y, DRIVABLE_X, VEHICLE_HITBOX } from "./constants/world";
 import type { IDriveGesture } from "./input";
+import type { LevelSkyMode } from "./levels/types";
 import { VEHICLE_ACTIVE_COLLISION_TYPES } from "./physics";
+import { readDynamicLightsEnabled } from "./settings";
 import type { ImpactKind } from "./types";
 import {
   frontPivotPose,
@@ -94,15 +96,25 @@ const createPlayerBody = (world: RAPIER.World): RAPIER.RigidBody => {
   return body;
 };
 
+const HEAD_LAMP_OFF_COLOR = 0x2b2e33;
+
 export const createPlayer = (
   world: RAPIER.World,
   scene: THREE.Scene,
+  skyMode: LevelSkyMode = "night",
+  dynamicLightsEnabled: boolean = readDynamicLightsEnabled(),
 ): IPlayer => {
+  const isDay = skyMode === "day";
+  const hasDynamicLights = dynamicLightsEnabled && !isDay;
+
   const model = createVehicleModel({
     kind: PLAYER_VEHICLE_KIND,
     paint: PLAYER.COLOR,
     lampBrightness: PLAYER.LAMP_BRIGHTNESS,
-    hasSpotlights: true,
+    hasSpotlights: hasDynamicLights,
+    hasBeams: !isDay,
+    isPlayer: true,
+    headLampColor: isDay ? HEAD_LAMP_OFF_COLOR : undefined,
   });
 
   scene.add(model.object);

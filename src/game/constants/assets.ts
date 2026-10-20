@@ -35,6 +35,8 @@ export const ASSET_KEY = {
   TRIM_MATERIAL: "vehicle-trim",
   HEADLIGHT_CONE_GEOMETRY: "headlight-cone",
   HEADLIGHT_CONE_MATERIAL: "headlight-cone",
+  HEADLIGHT_POOL_GEOMETRY: "headlight-pool",
+  HEADLIGHT_POOL_MATERIAL: "headlight-pool",
 } as const;
 
 /** Warm street-light spill baked into facade vertex colors: strongest on the road face, near the ground. */

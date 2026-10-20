@@ -3,6 +3,7 @@ import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.j
 
 import { ASSET_KEY } from "../constants/assets";
 import {
+  FRONT_AMBER_LAMP_SHAPE,
   HEAD_LAMP_SHAPE,
   HEADLIGHT_CONE,
   HEADLIGHT_POOL,
@@ -24,7 +25,10 @@ import {
 import { SCENE_BRIGHTNESS } from "../constants/sceneBrightness";
 import { HALF_PI, MIRRORED_SIDES } from "../constants/world";
 import type { Vec3Tuple } from "../types";
-import { createHeadlightCone } from "./headlightBeam";
+import {
+  createHeadlightCone,
+  createHeadlightGroundPool,
+} from "./headlightBeam";
 import { sharedAssets } from "./sharedAssets";
 
 export interface IVehicleModelOptions {
@@ -33,6 +37,10 @@ export interface IVehicleModelOptions {
   lampBrightness: number;
   /** Headlight cones + spot/pool lights. Player only; NPCs use emissive lamps only. */
   hasSpotlights: boolean;
+  /** Whether this is the player's car. */
+  isPlayer?: boolean;
+  /** Whether to add front light beam cones and road light pool. */
+  hasBeams?: boolean;
   /** NPC tail emissive layout; player uses the default round lamp. */
   tailLampStyle?: INpcTailLampStyle;
   /** Head emissive color (day DRL yellow on NPCs). */
@@ -59,6 +67,7 @@ interface ILampMaterials {
   tail: THREE.MeshStandardMaterial;
   head: THREE.MeshStandardMaterial;
   rearDay: THREE.MeshStandardMaterial | null;
+  frontAmber: THREE.MeshStandardMaterial | null;
 }
 
 const roundedBoxGeometry = ({
@@ -257,11 +266,28 @@ const addRearDayLampMeshes = (
   );
 };
 
+const addFrontAmberLampMeshes = (
+  group: THREE.Group,
+  side: number,
+  lamps: ILampLayout,
+  material: THREE.Material,
+) => {
+  const x = side * (lamps.halfSpan + 0.17);
+
+  addRounded(
+    group,
+    FRONT_AMBER_LAMP_SHAPE,
+    [x, lamps.headY, lamps.headZ - 0.01],
+    material,
+  );
+};
+
 const addLamps = (
   group: THREE.Group,
   lamps: ILampLayout,
   materials: ILampMaterials,
   hasSpotlights: boolean,
+  hasBeams: boolean,
   tailLampStyle: INpcTailLampStyle,
 ): THREE.Light[] => {
   const dynamicLights: THREE.Light[] = [];
@@ -282,7 +308,11 @@ const addLamps = (
       materials.head,
     );
 
-    if (!hasSpotlights) {
+    if (materials.frontAmber) {
+      addFrontAmberLampMeshes(group, side, lamps, materials.frontAmber);
+    }
+
+    if (!hasBeams) {
       continue;
     }
 
@@ -292,10 +322,20 @@ const addLamps = (
       lamps.headZ + HEADLIGHT_CONE.ORIGIN_OFFSET_Z,
     ];
     const cone = createHeadlightCone();
-
     cone.position.set(beamOrigin[0], beamOrigin[1], beamOrigin[2]);
-
     group.add(cone);
+
+    const groundPool = createHeadlightGroundPool();
+    groundPool.position.set(
+      x,
+      HEADLIGHT_POOL.Y,
+      lamps.headZ + HEADLIGHT_POOL.Z_OFFSET,
+    );
+    group.add(groundPool);
+
+    if (!hasSpotlights) {
+      continue;
+    }
 
     dynamicLights.push(addSpotlight(group, beamOrigin));
 
@@ -306,7 +346,11 @@ const addLamps = (
       HEADLIGHT_POOL.DECAY,
     );
 
-    pool.position.set(x, HEADLIGHT_POOL.Y, lamps.headZ + HEADLIGHT_POOL.Z_OFFSET);
+    pool.position.set(
+      x,
+      HEADLIGHT_POOL.Y,
+      lamps.headZ + HEADLIGHT_POOL.Z_OFFSET,
+    );
     group.add(pool);
     dynamicLights.push(pool);
   }
@@ -327,6 +371,8 @@ export const createVehicleModel = ({
   tailLampStyle,
   headLampColor,
   rearDayLampColor,
+  isPlayer,
+  hasBeams = false,
   tailLampStyleId = -1,
 }: IVehicleModelOptions): IVehicleModel => {
   const blueprint = VEHICLE_BLUEPRINTS[kind];
@@ -334,8 +380,9 @@ export const createVehicleModel = ({
   const resolvedTailStyle = tailLampStyle ?? defaultTailLampStyle();
   const resolvedHeadColor =
     headLampColor ?? VEHICLE_STYLE.LAMP_COLOR.HEAD;
-  const hasRearDayLamps = !hasSpotlights && rearDayLampColor !== undefined;
-  const paintEmissive = hasSpotlights
+  const isHeroCar = Boolean(isPlayer);
+  const hasRearDayLamps = !isHeroCar && rearDayLampColor !== undefined;
+  const paintEmissive = isHeroCar
     ? SCENE_BRIGHTNESS.VEHICLE.PLAYER_PAINT_EMISSIVE
     : SCENE_BRIGHTNESS.VEHICLE.NPC_PAINT_EMISSIVE;
   const paintMaterial = createPaintMaterial(
@@ -347,10 +394,15 @@ export const createVehicleModel = ({
     ? createLampMaterial(rearDayLampColor)
     : null;
 
+  const frontAmberMaterial = hasBeams
+    ? createLampMaterial(VEHICLE_STYLE.LAMP_COLOR.AMBER)
+    : null;
+
   const lampMaterials: ILampMaterials = {
     tail: createLampMaterial(resolvedTailStyle.color),
     head: createLampMaterial(resolvedHeadColor),
     rearDay: rearDayMaterial,
+    frontAmber: frontAmberMaterial,
   };
 
   const ownedMaterials: THREE.Material[] = [
@@ -361,6 +413,10 @@ export const createVehicleModel = ({
 
   if (rearDayMaterial) {
     ownedMaterials.push(rearDayMaterial);
+  }
+
+  if (frontAmberMaterial) {
+    ownedMaterials.push(frontAmberMaterial);
   }
   let signMaterial: THREE.MeshStandardMaterial | null = null;
 
@@ -393,6 +449,7 @@ export const createVehicleModel = ({
     blueprint.lamps,
     lampMaterials,
     hasSpotlights,
+    hasBeams,
     resolvedTailStyle,
   );
 
@@ -432,6 +489,11 @@ export const createVehicleModel = ({
 
     if (lampMaterials.rearDay) {
       lampMaterials.rearDay.emissiveIntensity =
+        rearAmberEmissiveIntensity(brightness);
+    }
+
+    if (lampMaterials.frontAmber) {
+      lampMaterials.frontAmber.emissiveIntensity =
         rearAmberEmissiveIntensity(brightness);
     }
 

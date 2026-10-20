@@ -193,6 +193,7 @@ const createNpcSlot = (
     kind: pickNpcKind(cars.kinds),
     paint: pickNpcPaint(outputGamma),
     hasSpotlights: false,
+    hasBeams: skyMode !== "day",
     ...lampLookFromPlacement(lampLook),
   });
 
@@ -236,6 +237,7 @@ const replaceSlotModel = (
     | "rearDayLampColor"
     | "lampBrightness"
   >,
+  skyMode: LevelSkyMode,
 ) => {
   const previousPosition = slot.model.object.position.clone();
 
@@ -245,6 +247,7 @@ const replaceSlotModel = (
     kind: placement.kind,
     paint: placement.paint,
     hasSpotlights: false,
+    hasBeams: skyMode !== "day",
     ...lampLookFromPlacement(placement),
   });
 
@@ -264,6 +267,7 @@ const applySlotAppearance = (
     | "rearDayLampColor"
     | "lampBrightness"
   >,
+  skyMode: LevelSkyMode,
 ) => {
   const tailStyle = NPC_TAIL_LAMP_STYLES[placement.tailLampStyleId];
   const wantsRearDayLamps = placement.rearDayLampColor !== undefined;
@@ -273,7 +277,7 @@ const applySlotAppearance = (
     slot.model.tailLampStyleId !== placement.tailLampStyleId ||
     slot.model.hasRearDayLamps !== wantsRearDayLamps
   ) {
-    replaceSlotModel(slot, scene, placement);
+    replaceSlotModel(slot, scene, placement, skyMode);
 
     return;
   }
@@ -291,10 +295,11 @@ const activateSlot = (
   slot: INpcSlot,
   scene: THREE.Scene,
   placement: INpcPlacement,
+  skyMode: LevelSkyMode,
 ) => {
   const { lane, z, cruiseSpeed } = placement;
 
-  applySlotAppearance(slot, scene, placement);
+  applySlotAppearance(slot, scene, placement, skyMode);
 
   slot.lane = lane;
   slot.cruiseSpeed = cruiseSpeed;
@@ -577,12 +582,17 @@ export const createTraffic = (
       return false;
     }
 
-    activateSlot(slot, scene, {
-      ...seed,
-      kind: pickNpcKind(cars.kinds),
-      paint: pickNpcPaint(outputGamma),
-      ...pickNpcLampLook(skyMode),
-    });
+    activateSlot(
+      slot,
+      scene,
+      {
+        ...seed,
+        kind: pickNpcKind(cars.kinds),
+        paint: pickNpcPaint(outputGamma),
+        ...pickNpcLampLook(skyMode),
+      },
+      skyMode,
+    );
 
     activeCount += 1;
 
@@ -968,7 +978,7 @@ export const createTraffic = (
       return { x: slot.worldX, z: slot.worldZ };
     },
     queueImpulse: mergeImpulse,
-    commitDynamics: (_playerSpeed) => {
+    commitDynamics: () => {
       for (const slot of slots) {
         if (slot.isActive) {
           pushSlotPose(slot);

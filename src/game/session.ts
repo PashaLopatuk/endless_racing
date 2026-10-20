@@ -11,6 +11,7 @@ import type { ILevelConfig } from "./levels";
 import type { IPhysicsWorld } from "./physics";
 import { createPlayer } from "./player";
 import { createGameScene } from "./scene";
+import { readDynamicLightsEnabled } from "./settings";
 import { createTraffic } from "./traffic";
 import type { IGameCallbacks, IGameHudState } from "./types";
 
@@ -43,21 +44,29 @@ export const createGameSession = async ({
   callbacks,
   level,
 }: IGameSessionOptions): Promise<IGameSession> => {
-  const view = createGameScene(container, level);
+  const gameScene = createGameScene(container, level);
   const input = createTouchInput();
-  const player = createPlayer(physics.world, view.scene);
+  const skyMode = level.palette.skyMode ?? "night";
+  const dynamicLightsEnabled = readDynamicLightsEnabled();
+  const player = createPlayer(
+    physics.world,
+    gameScene.objectScene,
+    skyMode,
+    dynamicLightsEnabled,
+  );
   const traffic = createTraffic(
     physics.world,
-    view.scene,
+    gameScene.objectScene,
     level.cars,
     level.palette.outputGamma,
-    level.palette.skyMode ?? "night",
+    skyMode,
   );
-  const environment = createEnvironment(view.scene, level);
+
+  const environment = createEnvironment(gameScene.objectScene, level);
   const collisions = createCollisionSystem({ player, traffic });
 
   console.time("view.warmUp");
-  await view.warmUp();
+  await gameScene.warmUp();
   console.timeEnd("view.warmUp");
 
   let isPaused = false;
@@ -148,8 +157,8 @@ export const createGameSession = async ({
 
       processSimulationByDeltaTime(dt);
 
-      view.follow(player.x, player.speed, dt);
-      view.render();
+      gameScene.follow(player.x, player.speed, dt);
+      gameScene.render();
 
       publishHud();
     },
@@ -165,7 +174,7 @@ export const createGameSession = async ({
       isPaused = nextIsPaused;
     },
     resize: () => {
-      view.resize();
+      gameScene.resize();
     },
     dispose: () => {
       if (isDisposed) {
@@ -178,7 +187,7 @@ export const createGameSession = async ({
       environment.dispose();
       traffic.dispose();
       player.dispose();
-      view.dispose();
+      gameScene.dispose();
       physics.dispose();
       sharedAssets.dispose();
     },
