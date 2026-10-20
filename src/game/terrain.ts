@@ -66,7 +66,3 @@ export const createFogHaze = (palette: ILevelPalette): THREE.Color => {
     0.42,
   );
 };
-
-const DAY_FOG_CURVE = 0.74;
-
-

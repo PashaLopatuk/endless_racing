@@ -13,11 +13,13 @@ export const Game = () => {
   const isSoundEnabled = storedSoundSetting !== "false";
 
   const soundEnabledRef = useRef(isSoundEnabled);
-  soundEnabledRef.current = isSoundEnabled;
-
   const mainTheme = useSound(MainSynthwaveTheme, { loop: true });
   const mainThemeRef = useRef(mainTheme);
-  mainThemeRef.current = mainTheme;
+
+  useEffect(() => {
+    soundEnabledRef.current = isSoundEnabled;
+    mainThemeRef.current = mainTheme;
+  }, [isSoundEnabled, mainTheme]);
 
   useEffect(() => {
     if (!isSoundEnabled) {
