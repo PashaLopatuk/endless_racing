@@ -45,13 +45,18 @@ export const createGameSession = async ({
 }: IGameSessionOptions): Promise<IGameSession> => {
   const gameScene = createGameScene(container, level);
   const input = createTouchInput();
-  const player = createPlayer(physics.world, gameScene.objectScene);
+  const skyMode = level.palette.skyMode ?? "night";
+  const player = createPlayer(
+    physics.world,
+    gameScene.objectScene,
+    skyMode,
+  );
   const traffic = createTraffic(
     physics.world,
     gameScene.objectScene,
     level.cars,
     level.palette.outputGamma,
-    level.palette.skyMode ?? "night",
+    skyMode,
   );
 
   const environment = createEnvironment(gameScene.objectScene, level);

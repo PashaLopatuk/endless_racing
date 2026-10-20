@@ -33,6 +33,8 @@ export interface IVehicleModelOptions {
   lampBrightness: number;
   /** Headlight cones + spot/pool lights. Player only; NPCs use emissive lamps only. */
   hasSpotlights: boolean;
+  /** Whether this is the player's car. */
+  isPlayer?: boolean;
   /** NPC tail emissive layout; player uses the default round lamp. */
   tailLampStyle?: INpcTailLampStyle;
   /** Head emissive color (day DRL yellow on NPCs). */
@@ -327,6 +329,7 @@ export const createVehicleModel = ({
   tailLampStyle,
   headLampColor,
   rearDayLampColor,
+  isPlayer,
   tailLampStyleId = -1,
 }: IVehicleModelOptions): IVehicleModel => {
   const blueprint = VEHICLE_BLUEPRINTS[kind];
@@ -334,8 +337,9 @@ export const createVehicleModel = ({
   const resolvedTailStyle = tailLampStyle ?? defaultTailLampStyle();
   const resolvedHeadColor =
     headLampColor ?? VEHICLE_STYLE.LAMP_COLOR.HEAD;
-  const hasRearDayLamps = !hasSpotlights && rearDayLampColor !== undefined;
-  const paintEmissive = hasSpotlights
+  const isHeroCar = isPlayer ?? hasSpotlights;
+  const hasRearDayLamps = !isHeroCar && rearDayLampColor !== undefined;
+  const paintEmissive = isHeroCar
     ? SCENE_BRIGHTNESS.VEHICLE.PLAYER_PAINT_EMISSIVE
     : SCENE_BRIGHTNESS.VEHICLE.NPC_PAINT_EMISSIVE;
   const paintMaterial = createPaintMaterial(
