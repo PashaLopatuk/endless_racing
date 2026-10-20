@@ -4,7 +4,7 @@ import { createLevelSky } from "./assets/sky";
 import type { ILevelConfig, ILevelPalette } from "./levels/types";
 import { getSpeedRatio } from "./util/drive";
 
-import { color, float, fog, rangeFogFactor, pow, smoothstep } from "three/tsl";
+import { color, fog } from "three/tsl";
 import {
   createCamera,
   updateCameraFov,
