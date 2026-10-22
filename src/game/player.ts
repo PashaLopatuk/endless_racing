@@ -23,6 +23,14 @@ import {
 import { getLaneCenterX } from "./util/lane";
 import { smoothNumberValueExponentially, clamp } from "./util/math";
 
+export interface IImpactResult {
+  kind: ImpactKind;
+  damage: number;
+  speedLoss: number;
+  severity: number;
+  isFatal: boolean;
+}
+
 export interface IPlayer {
   readonly body: RAPIER.RigidBody;
   readonly x: number;
@@ -34,7 +42,7 @@ export interface IPlayer {
   /** Hands the pose computed in `update` to Rapier for the next physics step. */
   commitPose(): void;
   syncMesh(): void;
-  absorbImpact(kind: ImpactKind): void;
+  absorbImpact(kind: ImpactKind): IImpactResult;
   /** Shifts the car sideways immediately (used to separate it from a car it scraped). */
   shiftAfterHit(offsetX: number): void;
   reset(): void;
@@ -252,15 +260,28 @@ export const createPlayer = (
       updateFlash();
     },
     absorbImpact: (kind) => {
+      const speedRatio = getSpeedRatio(state.speed);
+
       const speedLoss = Math.ceil(
-        IMPACT_SPEED_LOSS[kind] * getSpeedRatio(state.speed),
+        IMPACT_SPEED_LOSS[kind] * speedRatio,
       );
 
       const absorbedDamage = Math.ceil(
-        IMPACT_DAMAGE[kind] * getSpeedRatio(state.speed),
+        IMPACT_DAMAGE[kind] * speedRatio,
       );
 
+      const previousHealth = state.health;
       state.health = Math.max(0, state.health - absorbedDamage);
+      const isFatal = previousHealth > 0 && state.health <= 0;
+
+      // Base severity from damage and speed (scales from 0.2 to 1.0)
+      const maxPossibleDamage = IMPACT_DAMAGE.front;
+      const damageRatio = absorbedDamage / maxPossibleDamage;
+      const severity = clamp(
+        damageRatio * 0.7 + speedRatio * 0.3,
+        0.2,
+        1.0,
+      );
 
       state.speed = Math.max(PLAYER.MIN_SPEED, state.speed - speedLoss);
 
@@ -270,6 +291,14 @@ export const createPlayer = (
       );
 
       state.hitFlash = PLAYER.HIT_FLASH_SECONDS;
+
+      return {
+        kind,
+        damage: absorbedDamage,
+        speedLoss,
+        severity,
+        isFatal,
+      };
     },
     shiftAfterHit: (offsetX) => {
       const nextFront = clampToRoad(state.frontX + offsetX);

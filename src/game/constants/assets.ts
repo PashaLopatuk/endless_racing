@@ -39,13 +39,13 @@ export const ASSET_KEY = {
   HEADLIGHT_POOL_MATERIAL: "headlight-pool",
 } as const;
 
-/** Warm street-light spill baked into facade vertex colors: strongest on the road face, near the ground. */
+/** Cool nocturnal street ambient baked into facade vertex colors. */
 export const FACADE_SHADE = {
-  SPILL_COLOR: 0xffd2a1,
-  BASE_WEIGHT: 0.4,
-  LOW_WEIGHT: 0.6,
-  /** Kept moderate so brick, limestone, and grey reads stay distinct under street lights. */
-  STRENGTH: 0.42,
-  MAX_MIX: 0.38,
+  SPILL_COLOR: 0x8ab4d8,
+  BASE_WEIGHT: 0.3,
+  LOW_WEIGHT: 0.4,
+  /** Kept subtle so blue, charcoal, and grey reads stay crisp and distinct under street lights. */
+  STRENGTH: 0.25,
+  MAX_MIX: 0.12,
   MIN_SPAN: 0.001,
 } as const;

@@ -1,4 +1,5 @@
 import { PARK } from "../constants/environment/park";
+import { PALM_TREE } from "../constants/environment/palm";
 import type { ITerrainParkConfig } from "../levels/types";
 import { MIRRORED_SIDES } from "../constants/world";
 import { createRng, randomIn } from "../util/random";
@@ -116,6 +117,44 @@ export const createParkModel = (
         randomIn(random, [-depth * 0.34, depth * 0.34]),
       ],
       color: config.shrubColor,
+    });
+  }
+
+  // California park palm tree
+  const palmSeed = Math.abs(seed * 37 + 19);
+  const palmScale =
+    PALM_TREE.SIZE_TIERS[palmSeed % PALM_TREE.SIZE_TIERS.length];
+  const palmTrunkColor =
+    PALM_TREE.TRUNK_COLORS[palmSeed % PALM_TREE.TRUNK_COLORS.length];
+  const palmLeafColor =
+    PALM_TREE.LEAF_COLORS[(palmSeed >> 2) % PALM_TREE.LEAF_COLORS.length];
+  const palmX = randomIn(random, [-width * 0.26, width * 0.26]);
+  const palmZ = randomIn(random, [-depth * 0.26, depth * 0.26]);
+
+  batch.addBox({
+    size: [
+      PALM_TREE.TRUNK.SIZE[0] * palmScale,
+      PALM_TREE.TRUNK.SIZE[1] * palmScale,
+      PALM_TREE.TRUNK.SIZE[2] * palmScale,
+    ],
+    position: [palmX, PALM_TREE.TRUNK.Y * palmScale, palmZ],
+    color: palmTrunkColor,
+  });
+
+  for (let index = 0; index < PALM_TREE.LEAVES.length; index += 1) {
+    const leaf = PALM_TREE.LEAVES[index];
+    batch.addBox({
+      size: [
+        leaf.size[0] * palmScale,
+        leaf.size[1] * palmScale,
+        leaf.size[2] * palmScale,
+      ],
+      position: [
+        palmX + leaf.position[0] * palmScale,
+        leaf.position[1] * palmScale,
+        palmZ + leaf.position[2] * palmScale,
+      ],
+      color: palmLeafColor,
     });
   }
 

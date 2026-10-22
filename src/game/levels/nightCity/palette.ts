@@ -9,15 +9,15 @@ export const NIGHT_CITY_PALETTE: ILevelPalette = {
   fogFar: 128,
   horizon: [0.027, 0.035, 0.063],
   zenith: [0.035, 0.055, 0.12],
-  hemisphere: { sky: 0x243044, ground: 0x0a0a0c, intensity: 0.72 },
+  hemisphere: { sky: 0x243652, ground: 0x0c1016, intensity: 0.76 },
   keyLight: {
-    color: 0xb7c4d4,
-    intensity: 1.25,
+    color: 0xc8d8ec,
+    intensity: 1.35,
     position: [-28, 36, -18],
   },
   fillLight: {
-    color: 0x3a2a20,
-    intensity: 0.38,
+    color: 0x1c2e46,
+    intensity: 0.44,
     position: [16, 12, 30],
   },
 };

@@ -1,3 +1,4 @@
+import { HOUSE_STYLE } from "../../../constants/houses";
 import type { IEnvironmentConfig } from "../../types";
 
 export const NIGHT_CITY_ENVIRONMENT: IEnvironmentConfig = {
@@ -73,24 +74,66 @@ export const NIGHT_CITY_ENVIRONMENT: IEnvironmentConfig = {
         ROW_INSET: 6.2,
       },
     },
+    TRAFFIC_CONES: {
+      COUNT: 16,
+      SEED: 7391,
+      START_Z: -12,
+      MIN_SPACING: 22,
+      SPACING_JITTER: 28,
+      SIDEWALK_INSET: 0.65,
+      SCALE: 1.1,
+    },
   },
   houses: {
+    styles: [
+      { style: HOUSE_STYLE.BROWNSTONE, weight: 3.5 },
+      { style: HOUSE_STYLE.TOWNHOUSE, weight: 3.5 },
+      { style: HOUSE_STYLE.SHOP, weight: 3.0 },
+      { style: HOUSE_STYLE.MODERN, weight: 1.5 },
+    ],
     wallColors: [
-      0x4a4e54, 0x44484e, 0x3c4046, 0x2c3446, 0x52565c, 0x384248, 0x464a50,
-      0x565a60, 0x3e4248, 0x484c52, 0x2a2d32,
+      // Deep NYC Midnight & Dark Navy Blues
+      0x121b28, 0x162234, 0x1a283e, 0x1e2c44, 0x22324c,
+      0x142030, 0x18263a, 0x1c2a40, 0x203048, 0x243650,
+      0x152236, 0x19283e, 0x1d3048, 0x233852, 0x29405e,
+
+      // NYC Cool Slate & Steel Blues
+      0x283a54, 0x2c405c, 0x324666, 0x384e70, 0x263850,
+      0x2e425a, 0x344a64, 0x3a506e, 0x405878, 0x2a3e56,
+      0x30445e, 0x364c6a, 0x3e5474, 0x445c7e, 0x4c6486,
+
+      // NYC Deep Charcoal & Gunmetal Greys
+      0x1c2026, 0x22262e, 0x282c36, 0x2e3440,
+      0x343a46, 0x3a424e, 0x404856, 0x465060,
+
+      // Cool Brooklyn Stone & Architectural Slate Greys
+      0x4c5666, 0x545e70, 0x5c687a, 0x647084,
+      0x6e7a90, 0x78869c, 0x8290a8, 0x8ea0b8,
+
+      // Cold Bluestone & Graphite Accents
+      0x202834, 0x26303e, 0x2c3848, 0x323e50, 0x38465a, 0x3e4e62,
     ],
     trimColors: [
-      0x6a6e74, 0x5a5e64, 0x484c52, 0x7a7e86, 0x3a3e44, 0x52565c, 0x64686e,
+      0x101620, 0x161e2a, 0x1e2634, 0x263040, 0x303a4c,
+      0x3c485a, 0x4a566a, 0x5a667c, 0x6c7a90, 0x7e8ea6,
     ],
     roofColors: [
-      0x2a2c30, 0x32363c, 0x24282c, 0x383c42, 0x2e3438, 0x1e1c22,
+      0x0e141c, 0x141a24, 0x1a222e, 0x222a38, 0x2a3442,
     ],
     doorColors: [
-      0x1a120e, 0x241810, 0x140e0c, 0x1c2430, 0x301818, 0x18281e,
+      // Cool NYC Metropolitan Door Colors
+      0x101c2a, 0x142436, 0x1a2e44, 0x162230,
+      0x18202a, 0x222c38, 0x2a3442, 0x1c2630,
+      0x122420, 0x162e28, 0x281a24, 0x341e2a,
     ],
     awningColors: [
-      0x6a1c1c, 0x1c4a2a, 0x1c2a5a, 0x6a4a14, 0x4a1c4a, 0x2a2a2a,
+      // Bodega & Storefront Awnings: Navy, Steel, Forest, Crimson, Charcoal
+      0x12243a, 0x18304c, 0x1c3858, 0x142c44,
+      0x142e22, 0x1a382a, 0x202632, 0x283040,
+      0x381822, 0x441c28, 0x483416, 0x5c421a,
     ],
-    neonColors: [0xff4fa0, 0x4fe0ff, 0xffb347, 0x9dff6a, 0xc77dff],
+    neonColors: [
+      0x00d4ff, 0x3b82f6, 0x8b5cf6, 0xec4899, 0x06b6d4, 0x10b981, 0xffaa00,
+    ],
   },
 };

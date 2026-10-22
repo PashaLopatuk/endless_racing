@@ -27,6 +27,17 @@ export const CAMERA = {
   SHAKE_FREQ_HI: 20,
   /** How quickly shake intensity ramps up / down. */
   SHAKE_SMOOTH_RATE: 2,
+
+  /** Max horizontal impact shake in CSS px (stronger axis on hit). */
+  IMPACT_SHAKE_MAX_PX_X: 24,
+  /** Max vertical impact shake in CSS px (weaker axis on hit). */
+  IMPACT_SHAKE_MAX_PX_Y: 7,
+  /** Max angular tilt in degrees during impact shake. */
+  IMPACT_SHAKE_MAX_DEG: 1.4,
+  /** How quickly impact trauma decays per second. */
+  IMPACT_SHAKE_DECAY: 2.8,
+  /** Impact oscillation frequency (rad/s). */
+  IMPACT_SHAKE_FREQ: 42,
 } as const;
 
 export const RENDERER = {
@@ -50,4 +61,11 @@ export const SKY = {
   BRIGHT_STAR_THRESHOLD: 0.998,
   CLOUD_LAYER_SCALE: 3.4,
   CLOUD_DETAIL_SCALE: 6.1,
+
+  /** Base idle drift rate of the sky per second. */
+  DRIFT_BASE_RATE: 0.0006,
+  /** Speed-dependent drift factor (advances sky with driving speed). */
+  DRIFT_SPEED_FACTOR: 0.00005,
+  /** Rounded square factor (0 = round circle, 1 = sharp box). 0.32 gives subtle cartoon squircle. */
+  CLOUD_SQUIRCLE_FACTOR: 0.32,
 } as const;

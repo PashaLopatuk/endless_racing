@@ -11,6 +11,8 @@ import { createOverheadGuideSign } from "../assets/overheadGuideSign";
 import { createOverheadTrafficLightModel } from "../assets/overheadTrafficLight";
 import { createRoadSignModel } from "../assets/roadSign";
 import { createTrashBinModel } from "../assets/trashBin";
+import { createTrafficConeModel } from "../assets/trafficCone";
+import { createPalmTreeModel } from "../assets/palm";
 import { createTreeModel } from "../assets/tree";
 import { createTrafficLightModel } from "../assets/trafficLight";
 import { GUIDE_SIGN, OVERHEAD_TRAFFIC_LIGHT } from "../constants/environment/street";
@@ -18,6 +20,7 @@ import type { ILevelConfig } from "../levels/types";
 import { ROAD_HALF_WIDTH, STREET_SIDE, STREET_SIDES } from "../constants/world";
 import { buildCrosswalkZPositions } from "./crosswalkLayout";
 import { buildRoadSignPlacements } from "./roadSignLayout";
+import { buildTrafficConePlacements } from "./trafficConeLayout";
 import {
   buildTrashBinPlacements,
   TRASH_BIN_ZONE,
@@ -164,9 +167,13 @@ export const createEnvironment = (
     }
 
     const span = trees.COUNT_PER_SIDE * trees.SPACING;
+    const palmChance = trees.PALM_CHANCE ?? 0;
 
     buildTreePlacements(STREET_ROW, CURB_X).forEach(({ x, z, seed }) => {
-      const model = createTreeModel(seed);
+      const isPalm =
+        palmChance > 0 &&
+        (Math.abs(seed * 7 + 13) % 100) < palmChance * 100;
+      const model = isPalm ? createPalmTreeModel(seed) : createTreeModel(seed);
 
       placeModel(model, {
         x,
@@ -196,6 +203,28 @@ export const createEnvironment = (
         span: isSidewalk ? roadLoopSpan : houseSpan,
       });
     });
+  };
+
+  const layTrafficCones = () => {
+    const config = STREET_ROW.TRAFFIC_CONES;
+
+    if (!config) {
+      return;
+    }
+
+    buildTrafficConePlacements(STREET_ROW).forEach(
+      ({ z, side, xOffset, seed }) => {
+        const model = createTrafficConeModel(seed, config.SCALE ?? 1.0);
+        const x = side * (ROAD_HALF_WIDTH + xOffset);
+
+        placeModel(model, {
+          x,
+          z,
+          rotationY: (Math.abs(seed) % 8) * (Math.PI / 4),
+          span: roadLoopSpan,
+        });
+      },
+    );
   };
 
   const lineRow = (count: number, createAt: (index: number) => IPlacedModel) => {
@@ -318,6 +347,7 @@ export const createEnvironment = (
   layGuideSigns();
   layRoadSigns();
   layTrashBins();
+  layTrafficCones();
   layTrees();
   STREET_SIDES.forEach(lineStreetSide);
 

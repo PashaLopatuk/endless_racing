@@ -1,5 +1,6 @@
 import { compareObjects } from "../util/compare";
 
+import { createSoundEffects } from "./audio";
 import { sharedAssets } from "./assets/sharedAssets";
 import { createCollisionSystem } from "./collision";
 import { PLAYER } from "./constants/player";
@@ -62,8 +63,24 @@ export const createGameSession = async ({
     skyMode,
   );
 
+  const soundEffects = createSoundEffects();
   const environment = createEnvironment(gameScene.objectScene, level);
-  const collisions = createCollisionSystem({ player, traffic });
+  const collisions = createCollisionSystem({
+    player,
+    traffic,
+    onPlayerImpact: (impact) => {
+      // Camera shake: scales with impact strength; horizontal shake dominates over vertical
+      gameScene.triggerImpact(impact.severity);
+
+      // Play hit sound scaled by severity
+      soundEffects.playHit(impact.severity);
+
+      // Play death sound if the hit was fatal
+      if (impact.isFatal) {
+        soundEffects.playDeath();
+      }
+    },
+  });
 
   console.time("view.warmUp");
   await gameScene.warmUp();
@@ -166,6 +183,7 @@ export const createGameSession = async ({
       isPaused = false;
       deltaTimeAccumulator = 0;
       distance = 0;
+      soundEffects.stopAll();
       collisions.reset();
       player.reset();
       traffic.reset();
@@ -183,6 +201,7 @@ export const createGameSession = async ({
 
       isDisposed = true;
 
+      soundEffects.dispose();
       input.dispose();
       environment.dispose();
       traffic.dispose();

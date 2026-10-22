@@ -526,12 +526,16 @@ const buildShopHouse: HouseBuilder = (context) => {
     layer: BATCH_LAYER.GLOW,
   });
 
-  for (const side of MIRRORED_SIDES) {
-    addHouseWindow(context, WINDOW_KIND.PUNCHED, {
-      faceX,
-      y: SHOP_HOUSE.UPPER_WINDOW_Y,
-      z: side * depth * SHOP_HOUSE.UPPER_WINDOW_SPREAD_RATIO,
-    });
+  const upperFloors = height > 10.5 ? 2 : 1;
+  for (let floor = 0; floor < upperFloors; floor += 1) {
+    const wy = SHOP_HOUSE.UPPER_WINDOW_Y + floor * 2.7;
+    for (const side of MIRRORED_SIDES) {
+      addHouseWindow(context, WINDOW_KIND.PUNCHED, {
+        faceX,
+        y: wy,
+        z: side * depth * SHOP_HOUSE.UPPER_WINDOW_SPREAD_RATIO,
+      });
+    }
   }
 
   return toStreetModel(batch, width, depth);
@@ -553,7 +557,8 @@ export const createHouseModel = (
 ): IStreetModel => {
   const random = createRng(seed);
 
-  const { style } = pickWeighted(random, HOUSE_STYLE_WEIGHTS);
+  const styleWeights = colors.styles ?? HOUSE_STYLE_WEIGHTS;
+  const { style } = pickWeighted(random, styleWeights);
 
   return BUILDERS[style](createHouseContext(random, colors));
 };

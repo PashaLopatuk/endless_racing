@@ -1,13 +1,14 @@
 import { COLLISION } from "./constants/collision";
 import { BODY_KIND, IMPACT_KIND } from "./constants/kinds";
 import { readBodyData, type IContactEvent } from "./physics";
-import type { IPlayer } from "./player";
+import type { IImpactResult, IPlayer } from "./player";
 import type { INpcCar, ITraffic } from "./traffic";
 import type { IBodyUserData, ImpactKind } from "./types";
 
 export interface ICollisionParticipants {
   player: IPlayer;
   traffic: ITraffic;
+  onPlayerImpact?: (impact: IImpactResult) => void;
 }
 
 export interface ICollisionFrame {
@@ -150,6 +151,7 @@ const splitContact = (contact: IContactEvent): IContactPair | null => {
 export const createCollisionSystem = ({
   player,
   traffic,
+  onPlayerImpact,
 }: ICollisionParticipants): ICollisionSystem => {
   const lastHitAt = new Map<number, number>();
 
@@ -194,9 +196,11 @@ export const createCollisionSystem = ({
       closingSpeed: Math.max(0, player.speed - npc.cruiseSpeed),
     });
 
-    player.absorbImpact(kind);
+    const impact = player.absorbImpact(kind);
 
     separateFromPlayer(player, traffic, npc, kind, offset);
+
+    onPlayerImpact?.(impact);
   };
 
   return {

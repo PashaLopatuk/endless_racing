@@ -3,15 +3,23 @@ import { SUBURBS_LEVEL } from "./suburbs";
 import type { ILevelConfig } from "./types";
 
 export type {
+  HorizonSide,
+  IBaseLandscapeSpriteConfig,
   IBuildingDefinition,
   IBuildingGeometry,
   IBuildingSet,
   ICarLevelConfig,
   IEnvironmentConfig,
   IHouseColors,
+  IImageLandscapeSpriteConfig,
+  ILandscapeSpriteConfig,
   ILevelConfig,
   ILevelPalette,
+  IModelLandscapeSpriteConfig,
+  IMountainModelOptions,
+  LandscapeSpriteType,
   LevelSkyMode,
+  ModelSpritePreset,
   IStreetRows,
   ITerrainConfig,
 } from "./types";
