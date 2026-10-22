@@ -30,6 +30,13 @@ import {
 } from "../util/random";
 import { addCornice, addDoor, addWall, pickWallColor } from "./facade";
 import {
+  addNeonBladeSign,
+  addNycFireEscape,
+  addNycWaterTower,
+  addRoofACUnit,
+  addRoofBulkhead,
+} from "./buildingDetails";
+import {
   createStreetMeshBatch,
   toStreetModel,
   type IMeshBatch,
@@ -170,6 +177,65 @@ const buildBrownstone: HouseBuilder = (context) => {
     });
   }
 
+  // 1. NYC Cast Iron Fire Escape down facade window pair
+  if (chance(random, 0.7)) {
+    addNycFireEscape(batch, {
+      faceX,
+      z: firstZ + BROWNSTONE.WINDOW_PAIR_GAP / 2,
+      startY: BROWNSTONE.FIRST_FLOOR_Y,
+      floors: BROWNSTONE.FLOORS,
+      floorHeight: BROWNSTONE.FLOOR_STEP,
+      color: context.trim,
+      width: 0.95,
+      depth: BROWNSTONE.WINDOW_PAIR_GAP + 1.2,
+    });
+  }
+
+  // 2. Iconic NYC Wooden Rooftop Water Tower
+  if (chance(random, 0.65)) {
+    addNycWaterTower(batch, {
+      roofX: -width * 0.12,
+      roofY: height,
+      roofZ: depth * 0.18,
+      scale: 0.88,
+    });
+  }
+
+  // 3. Rooftop Bulkhead (stair/roof access enclosure)
+  if (chance(random, 0.6)) {
+    addRoofBulkhead(batch, {
+      x: -width * 0.1,
+      y: height,
+      z: -depth * 0.22,
+      width: 1.8,
+      height: 1.6,
+      depth: 2.2,
+      color: context.wall,
+    });
+  }
+
+  // 4. Rooftop AC Unit
+  if (chance(random, 0.5)) {
+    addRoofACUnit(batch, {
+      x: width * 0.1,
+      y: height,
+      z: 0,
+      scale: 0.8,
+    });
+  }
+
+  // 5. Vertical Projecting Neon Blade Sign
+  if (context.colors.neonColors.length > 0 && chance(random, 0.35)) {
+    addNeonBladeSign(batch, {
+      faceX,
+      y: BROWNSTONE.FIRST_FLOOR_Y + BROWNSTONE.FLOOR_STEP * 1.4,
+      z: -depth * 0.35,
+      height: 4.2,
+      width: 0.45,
+      color: pick(random, context.colors.neonColors),
+    });
+  }
+
   return toStreetModel(batch, width, depth);
 };
 
@@ -292,6 +358,53 @@ const buildTownhouse: HouseBuilder = (context) => {
       addHouseWindow(context, windowKind, { faceX, y, z: side * windowZ });
     }
   }
+
+  // Fire escape on one side
+  if (chance(random, 0.55)) {
+    addNycFireEscape(batch, {
+      faceX,
+      z: windowZ,
+      startY: TOWNHOUSE.FIRST_FLOOR_Y,
+      floors: TOWNHOUSE.FLOORS,
+      floorHeight: TOWNHOUSE.FLOOR_STEP,
+      color: context.trim,
+      width: 0.9,
+      depth: 1.8,
+    });
+  }
+
+  // Rooftop water tower
+  if (chance(random, 0.55)) {
+    addNycWaterTower(batch, {
+      roofX: -width * 0.1,
+      roofY: height + parapet.HEIGHT,
+      roofZ: depth * 0.15,
+      scale: 0.82,
+    });
+  }
+
+  // Rooftop AC unit
+  if (chance(random, 0.45)) {
+    addRoofACUnit(batch, {
+      x: width * 0.1,
+      y: height + parapet.HEIGHT,
+      z: -depth * 0.15,
+      scale: 0.8,
+    });
+  }
+
+  // Vertical neon blade sign
+  if (context.colors.neonColors.length > 0 && chance(random, 0.3)) {
+    addNeonBladeSign(batch, {
+      faceX,
+      y: TOWNHOUSE.FIRST_FLOOR_Y + TOWNHOUSE.FLOOR_STEP * 1.5,
+      z: -depth * 0.35,
+      height: 4.0,
+      width: 0.42,
+      color: pick(random, context.colors.neonColors),
+    });
+  }
+
   return toStreetModel(batch, width, depth);
 };
 
@@ -536,6 +649,38 @@ const buildShopHouse: HouseBuilder = (context) => {
         z: side * depth * SHOP_HOUSE.UPPER_WINDOW_SPREAD_RATIO,
       });
     }
+  }
+
+  // NYC wooden water tower on rooftop
+  if (chance(random, 0.6)) {
+    addNycWaterTower(batch, {
+      roofX: -width * 0.12,
+      roofY: height,
+      roofZ: depth * 0.18,
+      scale: 0.85,
+    });
+  }
+
+  // Rooftop AC chiller
+  if (chance(random, 0.5)) {
+    addRoofACUnit(batch, {
+      x: width * 0.12,
+      y: height,
+      z: -depth * 0.15,
+      scale: 0.85,
+    });
+  }
+
+  // Vertical projecting neon blade sign
+  if (context.colors.neonColors.length > 0 && chance(random, 0.45)) {
+    addNeonBladeSign(batch, {
+      faceX,
+      y: SHOP_HOUSE.UPPER_WINDOW_Y + 1.2,
+      z: -depth * 0.38,
+      height: 4.5,
+      width: 0.45,
+      color: pick(random, context.colors.neonColors),
+    });
   }
 
   return toStreetModel(batch, width, depth);

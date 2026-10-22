@@ -247,7 +247,7 @@ export const createEnvironment = (
       const seed =
         index + (isRight ? BUILDINGS.SEED_RIGHT : BUILDINGS.SEED_LEFT);
       const z = BUILDINGS.START_Z + index * BUILDINGS.SPACING;
-      const building = createBuildingModel(seed, level.buildings);
+      const building = createBuildingModel(seed, level.buildings, "back");
       const buildingX =
         side *
         (CURB_X +
@@ -282,10 +282,13 @@ export const createEnvironment = (
     }
 
     lineRow(HOUSES.COUNT_PER_SIDE, (index) => {
-      const model = createHouseModel(
-        index + (isRight ? HOUSES.SEED_RIGHT : HOUSES.SEED_LEFT),
-        houses,
-      );
+      const seed =
+        index + (isRight ? HOUSES.SEED_RIGHT : HOUSES.SEED_LEFT);
+      const model = level.buildings.frontRow
+        ? createBuildingModel(seed, level.buildings, "front")
+        : houses
+          ? createHouseModel(seed, houses)
+          : createBuildingModel(seed, level.buildings, "back");
 
       const x = side * (CURB_X + model.width / 2 + HOUSES.CURB_GAP);
 

@@ -200,11 +200,11 @@ const createDaySkyColor = (
   const horizonColor = vec3(...horizon);
   const zenithColor = vec3(...zenith);
   const sunDirection = normalize(vec3(0.42, 0.58, -0.22));
-  const sunColor = vec3(1.0, 0.96, 0.86);
-  const haloColor = vec3(0.82, 0.9, 1.0);
+  const sunColor = vec3(1.0, 0.94, 0.82);
+  const haloColor = vec3(0.95, 0.82, 0.65);
 
-  const cloudWhite = vec3(0.92, 0.95, 0.99);
-  const cloudShadow = vec3(0.78, 0.84, 0.91);
+  const cloudWhite = mix(horizonColor, vec3(0.98, 0.92, 0.88), float(0.2));
+  const cloudShadow = mix(zenithColor, horizonColor, float(0.35));
 
   return Fn(() => {
     const direction = normalize(positionLocal);
@@ -235,12 +235,12 @@ const createDaySkyColor = (
     const gradient = mix(
       mix(horizonColor, zenithColor, lift),
       litClouds,
-      cloudMask.mul(float(0.82)),
+      cloudMask.mul(float(0.35)),
     );
 
     const sunDot = max(dot(direction, sunDirection), float(0));
-    const sunDisc = pow(sunDot, float(128)).mul(float(1.05));
-    const sunHalo = pow(sunDot, float(10)).mul(float(0.2));
+    const sunDisc = pow(sunDot, float(128)).mul(float(0.65));
+    const sunHalo = pow(sunDot, float(14)).mul(float(0.06));
 
     return gradient.add(sunColor.mul(sunDisc)).add(haloColor.mul(sunHalo));
   });

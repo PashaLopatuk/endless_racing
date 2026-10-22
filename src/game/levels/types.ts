@@ -233,7 +233,7 @@ export interface IHouseColors {
 export interface IEnvironmentConfig {
   street: IStreetConfig;
   rows: IStreetRows;
-  houses: IHouseColors;
+  houses?: IHouseColors;
 }
 
 export interface ICarLevelConfig {

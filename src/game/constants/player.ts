@@ -16,12 +16,12 @@ export const PLAYER = {
   SPEED_RESPONSE: 3.5,
 
   /** Smoothing rate at absolute top speed — much lower than SPEED_RESPONSE. */
-  SPEED_HIGH_RESPONSE: 0.35,
+  SPEED_HIGH_RESPONSE: 0.15,
   GAME_OVER_DECEL: Infinity,
 
   STEER_METERS_PER_PIXEL: 0.038,
   STEER_RESPONSE: 12,
-  STEER_SPEED_RATIO: 0.55,
+  STEER_SPEED_RATIO: 0.25,
 
   AXLE_SPACING: 2.3,
   REAR_FOLLOW: 4.6,

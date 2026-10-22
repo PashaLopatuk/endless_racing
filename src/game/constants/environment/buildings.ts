@@ -8,6 +8,14 @@ export const BUILDING_STYLE = {
   WAREHOUSE: "warehouse",
   OFFICE: "office",
   APARTMENT: "apartment",
+  EMPIRE: "empire",
+  CHRYSLER: "chrysler",
+  BROWNSTONE: "brownstone",
+  TOWNHOUSE: "townhouse",
+  SHOP: "shop",
+  BUNGALOW: "bungalow",
+  GABLE: "gable",
+  MODERN: "modern",
 } as const;
 
 export type BuildingStyle = ValueOf<typeof BUILDING_STYLE>;
@@ -144,4 +152,32 @@ export const APARTMENT_BLOCK = {
     Y_DROP: 0.8,
   },
   ENTRANCE: { SIZE: [0.06, 2.4, 1.8], Y: 1.2, OFFSET: 0.04 },
+} as const;
+
+export const EMPIRE_TOWER = {
+  WIDTH: [18, 24],
+  DEPTH: [18, 24],
+  HEIGHT: [85, 130],
+  BASE_TIER_HEIGHT_RATIO: 0.22,
+  MID_TIER_HEIGHT_RATIO: 0.38,
+  UPPER_TIER_HEIGHT_RATIO: 0.25,
+  MAST_HEIGHT: 14,
+  SPIRE_HEIGHT: 12,
+  PILASTER_COUNT: 4,
+  BEACON_COLOR: 0xff1818,
+  CORNICE: { OVERHANG: 0.26, HEIGHT: 0.36 },
+} as const;
+
+export const CHRYSLER_TOWER = {
+  WIDTH: [16, 22],
+  DEPTH: [16, 22],
+  HEIGHT: [80, 125],
+  BASE_TIER_HEIGHT_RATIO: 0.25,
+  SHAFT_HEIGHT_RATIO: 0.45,
+  CROWN_TIERS: 4,
+  CROWN_HEIGHT: 16,
+  SPIRE_HEIGHT: 14,
+  BEACON_COLOR: 0xff1818,
+  CROWN_METAL_COLOR: 0x8898a8,
+  CROWN_GLOW_COLOR: 0xd8eeff,
 } as const;

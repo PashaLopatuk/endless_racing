@@ -531,6 +531,7 @@ export const createTraffic = (
   const slots = Array.from({ length: TRAFFIC.POOL_SIZE }, (_, index) =>
     createNpcSlot(world, scene, index, cars, outputGamma, skyMode),
   );
+
   const slotsById = new Map(slots.map((slot) => [slot.id, slot]));
   const parkedScratch: INpcSlot[] = [];
   const pendingImpulses = new Map<number, IImpulse>();
@@ -870,10 +871,14 @@ export const createTraffic = (
 
   const trySpawnAhead = (playerSpeed: number) => {
     const maxActive = getMaxActiveForPlayerSpeed(playerSpeed);
+    const currentSpawnMax =
+      Math.floor(Math.random() * TRAFFIC.SPAWNS_PER_TICK) + 1;
+
+    console.log("currentSpawnMax: ", currentSpawnMax);
 
     for (
       let spawnAttempt = 0;
-      spawnAttempt < TRAFFIC.SPAWNS_PER_TICK && activeCount < maxActive;
+      spawnAttempt < currentSpawnMax && activeCount < maxActive;
       spawnAttempt += 1
     ) {
       const placement = findGapFillPlacement();

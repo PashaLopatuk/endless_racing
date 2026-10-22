@@ -1,9 +1,9 @@
 export const TRAFFIC = {
   FIRST_ID: 1,
-  POOL_SIZE: 68,
-  MAX_ACTIVE: 46,
+  POOL_SIZE: 28,
+  MAX_ACTIVE: 76,
   /** Cap when the player crawls; avoids gridlock ahead. */
-  MAX_ACTIVE_SLOW: 34,
+  MAX_ACTIVE_SLOW: 24,
 
   MIN_SPEED: 7,
   MAX_SPEED: 16,
@@ -25,7 +25,7 @@ export const TRAFFIC = {
   /** Cross-lane slice thickness when keeping a passage open (m). */
   Z_SLICE_HALF: 7,
   /** Spawns attempted each spawn tick (when capacity allows). */
-  SPAWNS_PER_TICK: 1,
+  SPAWNS_PER_TICK: 2,
   /** Tight cruise spread so closing speeds stay similar and gaps do not collapse. */
   CRUISE_JITTER: 2.2,
   DESPAWN_Z: -20,
@@ -38,7 +38,7 @@ export const TRAFFIC = {
   SPAWN_INTERVAL_MAX: 1.35,
   /** Multiplier on spawn interval at min player speed (1 = no change). */
   SPAWN_INTERVAL_SLOW_SCALE: 3.2,
-  INITIAL_SPAWN_DELAY: 1.1,
+  INITIAL_SPAWN_DELAY: 0.8,
   /** Fraction of grid cells filled at race start (0–1); lower = sparser opening traffic. */
   INITIAL_GRID_FILL_RATIO: 0.68,
   /** Meters ahead of the player where we enforce a free lane. */

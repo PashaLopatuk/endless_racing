@@ -305,7 +305,6 @@ export const toStreetModel = (
   return { ...batch.build(), width, depth };
 };
 
-/** Buildings and houses: darker facades than the road batch. */
 export const createStreetMeshBatch = (): IMeshBatch =>
   createMeshBatch({
     vertexScale: SCENE_BRIGHTNESS.BUILDING_VERTEX,

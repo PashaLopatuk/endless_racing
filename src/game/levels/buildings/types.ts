@@ -21,6 +21,19 @@ export interface IBuildingGeometry {
 }
 
 /**
+ * Optional architectural feature overrides for a building definition.
+ */
+export interface IBuildingFeatures {
+  waterTowerChance?: number;
+  fireEscapeChance?: number;
+  roofBulkheadChance?: number;
+  roofAcUnitChance?: number;
+  neonBladeSignChance?: number;
+  balconyChance?: number;
+  aviationBeacons?: boolean;
+}
+
+/**
  * One building the level can spawn.
  * Geometry, colors, and generation parameters are all configurable per-level.
  */
@@ -30,13 +43,25 @@ export interface IBuildingDefinition {
   weight: number;
   wallColors: readonly number[];
   trimColors: readonly number[];
+  roofColors?: readonly number[];
+  doorColors?: readonly number[];
+  awningColors?: readonly number[];
   geometry?: IBuildingGeometry;
+  features?: IBuildingFeatures;
 }
 
-/** The set a level hands the game. The game picks one entry and builds it. */
-export interface IBuildingSet {
+/**
+ * Unified building configuration for a level district:
+ * Configures both the front-row (street-level) and back-row (skyline) structures.
+ */
+export interface IBuildingDistrictConfig {
   colorRandomize: IColorSpread;
   neonColors: readonly number[];
   metalColors: readonly number[];
-  buildings: readonly IBuildingDefinition[];
+  frontRow?: readonly IBuildingDefinition[];
+  backRow?: readonly IBuildingDefinition[];
+  /** Legacy fallback for backRow */
+  buildings?: readonly IBuildingDefinition[];
 }
+
+export type IBuildingSet = IBuildingDistrictConfig;
