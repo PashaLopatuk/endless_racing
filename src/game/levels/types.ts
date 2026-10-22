@@ -1,6 +1,8 @@
 import type { BuildingStyle } from "../constants/environment/buildings";
+import type { HouseStyle } from "../constants/houses";
 import type { VehicleKind } from "../constants/vehicles";
 import type { IBuildingSet } from "./buildings/types";
+import type { Object3D, Texture } from "three";
 
 export type {
   IBuildingDefinition,
@@ -10,6 +12,64 @@ export type {
 } from "./buildings/types";
 
 export type LevelSkyMode = "day" | "night";
+
+export type LandscapeSpriteType = "image" | "model";
+export type HorizonSide = "left" | "center" | "right";
+
+export interface IBaseLandscapeSpriteConfig {
+  id?: string;
+  side?: HorizonSide;
+  position?: [number, number, number];
+  scale?: number | [number, number] | [number, number, number];
+  rotation?: [number, number, number];
+  fog?: boolean;
+  renderOrder?: number;
+  opacity?: number;
+}
+
+export interface IImageLandscapeSpriteConfig extends IBaseLandscapeSpriteConfig {
+  type: "image";
+  textureUrl: string | Texture;
+  width?: number;
+  height?: number;
+  tint?: number;
+  billboard?: boolean;
+  alphaTest?: number;
+}
+
+export type ModelSpritePreset = "mountain" | "hills" | "hollywood_mountain";
+
+export interface IMountainModelOptions {
+  color?: number;
+  accentColor?: number;
+  ridgeColor?: number;
+  width?: number;
+  height?: number;
+  heightScale?: number;
+  depth?: number;
+  segmentsX?: number;
+  segmentsZ?: number;
+  seed?: number;
+  showHollywoodSign?: boolean;
+  signText?: string;
+  signColor?: number;
+  side?: HorizonSide;
+  showTrees?: boolean;
+}
+
+export interface IModelLandscapeSpriteConfig extends IBaseLandscapeSpriteConfig {
+  type: "model";
+  /**
+   * Predefined model preset ("mountain", "hills", "hollywood_mountain"),
+   * a THREE.Object3D instance, or a factory function returning a THREE.Object3D.
+   */
+  model: ModelSpritePreset | Object3D | (() => Object3D);
+  options?: IMountainModelOptions;
+}
+
+export type ILandscapeSpriteConfig =
+  | IImageLandscapeSpriteConfig
+  | IModelLandscapeSpriteConfig;
 
 export interface ILevelPalette {
   outputGamma: number;
@@ -57,6 +117,7 @@ export interface ITerrainConfig {
   edgeColor: number;
   dashColor: number;
   park?: ITerrainParkConfig;
+  landscapeSprites?: readonly ILandscapeSpriteConfig[];
 }
 
 export interface IStreetConfig {
@@ -145,6 +206,17 @@ export interface IStreetRows {
     SKIP_CHANCE: number;
     SEED_LEFT: number;
     SEED_RIGHT: number;
+    PALM_CHANCE?: number;
+  };
+  /** Orange highway traffic cones along curb/sidewalk (optional per level). */
+  TRAFFIC_CONES?: {
+    COUNT: number;
+    SEED: number;
+    START_Z: number;
+    MIN_SPACING: number;
+    SPACING_JITTER: number;
+    SIDEWALK_INSET: number;
+    SCALE?: number;
   };
 }
 
@@ -155,12 +227,13 @@ export interface IHouseColors {
   doorColors: readonly number[];
   awningColors: readonly number[];
   neonColors: readonly number[];
+  styles?: readonly { style: HouseStyle; weight: number }[];
 }
 
 export interface IEnvironmentConfig {
   street: IStreetConfig;
   rows: IStreetRows;
-  houses: IHouseColors;
+  houses?: IHouseColors;
 }
 
 export interface ICarLevelConfig {

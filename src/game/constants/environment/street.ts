@@ -31,7 +31,7 @@ export const CROSSWALK = {
 export const TRAFFIC_LIGHT = {
   POLE: { SIZE: [0.14, 4.4, 0.14], Y: 2.2, COLOR: 0x2c3036 },
   ARM: { SIZE: [1.15, 0.1, 0.1], X: 0.58, Y: 4.35 },
-  HEAD: { SIZE: [0.26, 0.62, 0.2], X: 1.15, Y: 4.2, COLOR: 0x17191d },
+  HEAD: { SIZE: [0.26, 0.62, 0.2], X: 1.15, Y: 4.2, COLOR: 0xfab005 }, // Жовтий корпус
   LAMP: { SIZE: [0.14, 0.14, 0.05], TOP_Y: 4.38, STEP: 0.18, Z: -0.12 },
   LAMP_COLORS: [0xff3b30, 0xffb020, 0x3ddc6a],
   UNLIT_GLOW: 0.12,
@@ -39,18 +39,25 @@ export const TRAFFIC_LIGHT = {
 } as const;
 
 export const OVERHEAD_TRAFFIC_LIGHT = {
-  /** Poles sit just outside the yellow edge lines. */
   SPAN_PAST_EDGE: 0.45,
-  POLE: { SIZE: [0.18, 5.9, 0.18], Y: 2.95, COLOR: 0x2c3036 },
-  BEAM: { SIZE: [0, 0.32, 0.28] as const, Y: 5.72 },
-  HEAD: { SIZE: [0.28, 0.64, 0.22], Y: 5.28, COLOR: 0x17191d },
+  POLE: { SIZE: [0.2, 6.4, 0.2], Y: 3.2, COLOR: 0x2c3036 },
+  BEAM_TOP_Y: 6.2,
+  BEAM_BOTTOM_Y: 5.7,
+  BEAM_SIZE: [0, 0.12, 0.12] as const,
+  HEAD: { SIZE: [0.32, 0.8, 0.24], Y: 5.4, COLOR: 0xfab005 },
+  BACKPLATE: { SIZE: [0.6, 1.0, 0.04], COLOR: 0x111111 },
   LAMP: {
-    SIZE: [0.15, 0.15, 0.05],
-    TOP_Y: 5.48,
-    STEP: 0.18,
-    Z: 0.14,
+    SIZE: [0.18, 0.18, 0.06],
+    TOP_Y: 5.65,
+    STEP: 0.25,
+    Z: 0.15,
   },
-  /** Lane indices (0-based) that get a signal head pair. */
+  VISOR: {
+    SIZE: [0.26, 0.04, 0.16],
+    Y_OFFSET: 0.12,
+    Z_OFFSET: 0.08,
+    COLOR: 0x111111,
+  },
   HEAD_LANES: [1, 2],
   SEED: 880,
 } as const;
@@ -61,34 +68,25 @@ export const GUIDE_SIGN = {
   SPACING: 96,
   SEED: 420,
   SPAN_PAST_EDGE: 0.35,
-  POLE: { SIZE: [0.16, 6.2, 0.16] as const, Y: 3.1, COLOR: 0x2a2e33 },
-  BEAM_Y: 6.35,
-  BEAM_SIZE: [0, 0.16, 0.16] as const,
-  PANEL_Y: 5.55,
-  PANEL_WIDTH: 4.4,
-  PANEL_HEIGHT: 1.45,
-  COLORS: {
-    GREEN: "#178a45",
-    BLUE: "#1c6eb5",
+  POLE: { SIZE: [0.2, 7.0, 0.2] as const, Y: 3.5, COLOR: 0x2a2e33 },
+  TRUSS: {
+    TOP_Y: 6.6,
+    BOTTOM_Y: 5.6,
+    BEAM_SIZE: [0, 0.12, 0.12] as const,
+    STRUT_SIZE: [0.06, 0, 0.06] as const,
+    SECTIONS: 12,
   },
-  /** Inner-lane pair cycled by gantry seed; always green left, blue right. */
-  DESTINATION_PAIRS: [
-    ["Downtown", "Riverside"],
-    ["Airport", "Harbor"],
-    ["North Loop", "South Loop"],
-    ["City Center", "Midtown"],
-    ["Stadium", "University"],
-    ["Tech Park", "Old Town"],
-    ["Industrial", "Waterfront"],
-    ["Mall Blvd", "Park Ave"],
-    ["Convention", "Cruise Port"],
-    ["Uptown", "Lakeview"],
-    ["West Side", "East Side"],
-    ["Central Sta", "Bus Terminal"],
-    ["Arts District", "Music Hall"],
-    ["Hospital", "Medical Ctr"],
-    ["Beach Front", "Pier Nine"],
-    ["Suburbs", "Country Rd"],
+  PANEL_Y: 5.8,
+  PANEL_WIDTH: 3.0,
+  PANEL_HEIGHT: 1.2,
+  COLORS: {
+    NYC_GREEN: "#0f5933",
+  },
+  DESTINATIONS: [
+    ["Broadway", "Times Sq", "FDR Drive"],
+    ["Brooklyn", "Manhattan", "Queens"],
+    ["Wall St", "SoHo", "Tribeca"],
+    ["5th Ave", "Central Park", "Harlem"],
   ] as const,
 } as const;
 

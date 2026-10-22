@@ -14,37 +14,54 @@ const addSignalHead = (
   facingZ: number,
   litIndex: number,
 ) => {
-  const { HEAD, LAMP } = OVERHEAD_TRAFFIC_LIGHT;
+  const { HEAD, BACKPLATE, LAMP, VISOR } = OVERHEAD_TRAFFIC_LIGHT;
   const { LAMP_COLORS, UNLIT_GLOW } = TRAFFIC_LIGHT;
-  const lampZ = facingZ * LAMP.Z;
 
   batch.addBox({
-    size: HEAD.SIZE,
+    size: BACKPLATE.SIZE,
     position: [x, HEAD.Y, 0],
+    color: BACKPLATE.COLOR,
+  });
+
+  const headZ = facingZ * (BACKPLATE.SIZE[2] / 2 + HEAD.SIZE[2] / 2);
+  batch.addBox({
+    size: HEAD.SIZE,
+    position: [x, HEAD.Y, headZ],
     color: HEAD.COLOR,
   });
 
+  const lampZ = headZ + facingZ * (HEAD.SIZE[2] / 2 + LAMP.SIZE[2] / 2 - 0.02);
+
   LAMP_COLORS.forEach((color, index) => {
+    const lampY = LAMP.TOP_Y - index * LAMP.STEP;
+
+    // 3. Сама лампа
     batch.addBox({
       size: LAMP.SIZE,
-      position: [x, LAMP.TOP_Y - index * LAMP.STEP, lampZ],
+      position: [x, lampY, lampZ],
+      // Змішуємо з чорним кольором щита, щоб вимкнені лампи виглядали темними
       color:
-        index === litIndex
-          ? color
-          : mixHex(HEAD.COLOR, color, UNLIT_GLOW),
+        index === litIndex ? color : mixHex(BACKPLATE.COLOR, color, UNLIT_GLOW),
       layer: BATCH_LAYER.GLOW,
+    });
+
+    // 4. Дашок (visor) над лампою
+    batch.addBox({
+      size: VISOR.SIZE,
+      position: [x, lampY + VISOR.Y_OFFSET, lampZ + facingZ * VISOR.Z_OFFSET],
+      color: VISOR.COLOR,
     });
   });
 };
 
-/** Gantry spanning the road with signal heads over the inner lanes. */
 export const createOverheadTrafficLightModel = (seed: number): IStreetModel => {
-  const { POLE, BEAM } = OVERHEAD_TRAFFIC_LIGHT;
+  const { POLE, BEAM_SIZE, BEAM_TOP_Y, BEAM_BOTTOM_Y } = OVERHEAD_TRAFFIC_LIGHT;
   const spanHalf = ROAD_HALF_WIDTH + OVERHEAD_TRAFFIC_LIGHT.SPAN_PAST_EDGE;
   const litIndex = Math.abs(seed) % TRAFFIC_LIGHT.LAMP_COLORS.length;
   const batch = createMeshBatch();
   const headLanes = OVERHEAD_TRAFFIC_LIGHT.HEAD_LANES;
 
+  // Опори
   for (const side of [-1, 1] as const) {
     batch.addBox({
       size: POLE.SIZE,
@@ -53,15 +70,23 @@ export const createOverheadTrafficLightModel = (seed: number): IStreetModel => {
     });
   }
 
+  // Верхня балка
   batch.addBox({
-    size: [spanHalf * 2, BEAM.SIZE[1], BEAM.SIZE[2]],
-    position: [0, BEAM.Y, 0],
+    size: [spanHalf * 2, BEAM_SIZE[1], BEAM_SIZE[2]],
+    position: [0, BEAM_TOP_Y, 0],
     color: POLE.COLOR,
   });
 
+  // Нижня балка
+  batch.addBox({
+    size: [spanHalf * 2, BEAM_SIZE[1], BEAM_SIZE[2]],
+    position: [0, BEAM_BOTTOM_Y, 0],
+    color: POLE.COLOR,
+  });
+
+  // Додаємо світлофори
   for (const lane of headLanes) {
     const x = getLaneCenterX(lane);
-
     addSignalHead(batch, x, 1, litIndex);
     addSignalHead(batch, x, -1, litIndex);
   }
@@ -69,6 +94,6 @@ export const createOverheadTrafficLightModel = (seed: number): IStreetModel => {
   return toStreetModel(
     batch,
     spanHalf * 2,
-    BEAM.SIZE[2] + Math.abs(OVERHEAD_TRAFFIC_LIGHT.LAMP.Z) * 2,
+    BEAM_SIZE[2] + Math.abs(OVERHEAD_TRAFFIC_LIGHT.LAMP.Z) * 3,
   );
 };

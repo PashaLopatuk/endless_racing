@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
 import { createLevelSky } from "./assets/sky";
-import type { ILevelConfig, ILevelPalette } from "./levels/types";
+import type { ILevelConfig, ILevelPalette, ITerrainConfig } from "./levels/types";
 import { getSpeedRatio } from "./util/drive";
 
 import { color, fog } from "three/tsl";
@@ -17,11 +17,17 @@ import {
 } from "./camera/postProcessing";
 import { createScreenShakeController } from "./camera/effect";
 import { viewportSize } from "./util/viewport";
-import { addGlobalLight, createFogHaze, createGround } from "./terrain";
+import {
+  addGlobalLight,
+  createFogHaze,
+  createGround,
+  createLandscapeSprites,
+} from "./terrain";
 
 export interface IGameScene {
   readonly objectScene: THREE.Scene;
   follow(playerX: number, speed: number, dt: number): void;
+  triggerImpact(severity: number): void;
   render(): void;
   resize(): void;
   /** Compiles every shader up front so the first spawn of each object type does not hitch. */
@@ -29,7 +35,7 @@ export interface IGameScene {
   dispose(): void;
 }
 
-const createWorldScene = (palette: ILevelPalette, groundColor: number) => {
+const createWorldScene = (palette: ILevelPalette, terrain: ITerrainConfig) => {
   const scene = new THREE.Scene();
   const haze = createFogHaze(palette);
 
@@ -42,12 +48,17 @@ const createWorldScene = (palette: ILevelPalette, groundColor: number) => {
   const sky = createLevelSky(palette);
   scene.add(sky.mesh);
 
-  const ground = createGround(groundColor);
+  const ground = createGround(terrain.groundColor);
   scene.add(ground);
+
+  const landscape = createLandscapeSprites(terrain);
+  scene.add(landscape.group);
 
   return {
     scene,
+    sky,
     dispose: () => {
+      landscape.dispose();
       sky.dispose();
       ground.geometry.dispose();
       ground.material.dispose();
@@ -62,7 +73,7 @@ export const createGameScene = (
   const { palette, terrain } = level;
   const { width, height } = viewportSize(container);
 
-  const world = createWorldScene(palette, terrain.groundColor);
+  const world = createWorldScene(palette, terrain);
   const camera = createCamera(width / height);
   const renderer = createGameRenderer(container, width, height);
 
@@ -85,7 +96,13 @@ export const createGameScene = (
       updateCameraPosition(camera, playerX, speedRatio, dt);
       updateCameraFov(camera, speedRatio, dt);
 
+      world.sky.update(speed, dt);
+      world.sky.mesh.position.set(camera.position.x, camera.position.y, camera.position.z);
+
       screenShake.update(speed, dt);
+    },
+    triggerImpact: (severity) => {
+      screenShake.triggerImpact(severity);
     },
     render: () => {
       postProcessing.render();

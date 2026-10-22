@@ -1,4 +1,5 @@
 import { PARK } from "../constants/environment/park";
+import { addPalmTreeToBatch } from "./palm";
 import type { ITerrainParkConfig } from "../levels/types";
 import { MIRRORED_SIDES } from "../constants/world";
 import { createRng, randomIn } from "../util/random";
@@ -118,6 +119,12 @@ export const createParkModel = (
       color: config.shrubColor,
     });
   }
+
+  // California park palm tree
+  const palmSeed = Math.abs(seed * 37 + 19);
+  const palmX = randomIn(random, [-width * 0.26, width * 0.26]);
+  const palmZ = randomIn(random, [-depth * 0.26, depth * 0.26]);
+  addPalmTreeToBatch(batch, palmX, palmZ, palmSeed, 0.72);
 
   return toStreetModel(batch, width, depth);
 };

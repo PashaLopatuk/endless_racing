@@ -1,9 +1,24 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { MeshLambertNodeMaterial } from "three/webgpu";
-import { attribute, float, mix, positionWorld, smoothstep, vec3 } from "three/tsl";
+import {
+  attribute,
+  float,
+  mix,
+  positionWorld,
+  smoothstep,
+  vec3,
+} from "three/tsl";
 
-import { ASSET_KEY, BATCH_LAYER, BATCH_LAYERS, FACADE_SHADE, GEOMETRY_ATTRIBUTE, RGB_ITEM_SIZE, type BatchLayer } from "../constants/assets";
+import {
+  ASSET_KEY,
+  BATCH_LAYER,
+  BATCH_LAYERS,
+  FACADE_SHADE,
+  GEOMETRY_ATTRIBUTE,
+  RGB_ITEM_SIZE,
+  type BatchLayer,
+} from "../constants/assets";
 import { SCENE_BRIGHTNESS } from "../constants/sceneBrightness";
 import type { Vec3Tuple } from "../types";
 import { sharedAssets } from "./sharedAssets";
@@ -53,7 +68,7 @@ export interface IMeshBatch {
   build(): IBatchedModel;
 }
 
-/** Flat facade color: warm street light at the base, cold blue toward the roof. */
+/** Flat facade color: neutral nocturnal vertical grade, cold blue toward the roof. */
 const createFacadeMaterial = (): THREE.Material => {
   const material = new MeshLambertNodeMaterial();
 
@@ -61,7 +76,8 @@ const createFacadeMaterial = (): THREE.Material => {
 
   const vertexColor = attribute("color", "vec3");
   const height = smoothstep(float(1.2), float(46), positionWorld.y);
-  const grade = mix(vec3(1.45, 0.82, 0.46), vec3(0.34, 0.44, 0.78), height);
+  // Preserves true vertex colors (blues stay blue, greys stay grey)
+  const grade = mix(vec3(0.96, 1.0, 1.06), vec3(0.85, 0.92, 1.15), height);
 
   material.colorNode = vertexColor.mul(grade);
 
@@ -99,14 +115,21 @@ const getLayerMaterial = (
 
 const toMergeable = (geometry: THREE.BufferGeometry): THREE.BufferGeometry => {
   const flat = geometry.index ? geometry.toNonIndexed() : geometry;
+
   if (flat !== geometry) {
     geometry.dispose();
   }
+
   flat.deleteAttribute(GEOMETRY_ATTRIBUTE.UV);
+
   return flat;
 };
 
-const writeColor = (colors: Float32Array, index: number, color: THREE.Color) => {
+const writeColor = (
+  colors: Float32Array,
+  index: number,
+  color: THREE.Color,
+) => {
   const offset = index * RGB_ITEM_SIZE;
   colors[offset] = color.r;
   colors[offset + 1] = color.g;
@@ -126,12 +149,18 @@ const paintUniform = (
 ) => {
   const count = geometry.getAttribute(GEOMETRY_ATTRIBUTE.POSITION).count;
   const colors = new Float32Array(count * RGB_ITEM_SIZE);
+
   baseColor.setHex(hex);
   scaleColor(baseColor, vertexScale);
+
   for (let index = 0; index < count; index += 1) {
     writeColor(colors, index, baseColor);
   }
-  geometry.setAttribute(GEOMETRY_ATTRIBUTE.COLOR, new THREE.BufferAttribute(colors, RGB_ITEM_SIZE));
+
+  geometry.setAttribute(
+    GEOMETRY_ATTRIBUTE.COLOR,
+    new THREE.BufferAttribute(colors, RGB_ITEM_SIZE),
+  );
 };
 
 const paintShaded = (
@@ -141,21 +170,38 @@ const paintShaded = (
 ) => {
   const position = geometry.getAttribute(GEOMETRY_ATTRIBUTE.POSITION);
   const colors = new Float32Array(position.count * RGB_ITEM_SIZE);
+
   geometry.computeBoundingBox();
+
   const bounds = geometry.boundingBox ?? new THREE.Box3();
   const spanX = Math.max(bounds.max.x - bounds.min.x, FACADE_SHADE.MIN_SPAN);
   const spanY = Math.max(bounds.max.y - bounds.min.y, FACADE_SHADE.MIN_SPAN);
+
   baseColor.setHex(hex);
+
   scaleColor(baseColor, vertexScale);
 
   for (let index = 0; index < position.count; index += 1) {
     const towardRoad = (position.getX(index) - bounds.min.x) / spanX;
     const nearGround = 1 - (position.getY(index) - bounds.min.y) / spanY;
-    const spill = towardRoad * towardRoad * (FACADE_SHADE.BASE_WEIGHT + nearGround * FACADE_SHADE.LOW_WEIGHT);
-    vertexColor.copy(baseColor).lerp(spillColor, Math.min(spill * FACADE_SHADE.STRENGTH, FACADE_SHADE.MAX_MIX));
+    const spill =
+      towardRoad *
+      towardRoad *
+      (FACADE_SHADE.BASE_WEIGHT + nearGround * FACADE_SHADE.LOW_WEIGHT);
+
+    vertexColor
+      .copy(baseColor)
+      .lerp(
+        spillColor,
+        Math.min(spill * FACADE_SHADE.STRENGTH, FACADE_SHADE.MAX_MIX),
+      );
+
     writeColor(colors, index, vertexColor);
   }
-  geometry.setAttribute(GEOMETRY_ATTRIBUTE.COLOR, new THREE.BufferAttribute(colors, RGB_ITEM_SIZE));
+  geometry.setAttribute(
+    GEOMETRY_ATTRIBUTE.COLOR,
+    new THREE.BufferAttribute(colors, RGB_ITEM_SIZE),
+  );
 };
 
 const createLayerBuckets = (): Record<BatchLayer, THREE.BufferGeometry[]> => ({
@@ -177,18 +223,28 @@ export const createMeshBatch = (
   const useFacadeGradient = options.useFacadeGradient ?? false;
   let buckets = createLayerBuckets();
 
-  const addGeometry = ({ geometry, color, position, rotation, layer = BATCH_LAYER.SOLID, isShaded = false }: IGeometryPart) => {
+  const addGeometry = ({
+    geometry,
+    color,
+    position,
+    rotation,
+    layer = BATCH_LAYER.SOLID,
+    isShaded = false,
+  }: IGeometryPart) => {
     const prepared = toMergeable(geometry);
+
     if (isShaded) {
       paintShaded(prepared, color, vertexScale);
     } else {
       paintUniform(prepared, color, vertexScale);
     }
+
     if (rotation) {
       prepared.rotateX(rotation[0]);
       prepared.rotateY(rotation[1]);
       prepared.rotateZ(rotation[2]);
     }
+
     if (position) {
       prepared.translate(position[0], position[1], position[2]);
     }
@@ -196,7 +252,10 @@ export const createMeshBatch = (
   };
 
   const addBox = ({ size, ...part }: IBoxPart) => {
-    addGeometry({ ...part, geometry: new THREE.BoxGeometry(size[0], size[1], size[2]) });
+    addGeometry({
+      ...part,
+      geometry: new THREE.BoxGeometry(size[0], size[1], size[2]),
+    });
   };
 
   const build = (): IBatchedModel => {
@@ -205,17 +264,27 @@ export const createMeshBatch = (
 
     for (const layer of BATCH_LAYERS) {
       const parts = buckets[layer];
+
       if (parts.length === 0) {
         continue;
       }
+
       const geometry = mergeGeometries(parts);
+
       parts.forEach((part) => part.dispose());
+
       if (!geometry) {
-        throw new Error(`MeshBatch: failed to merge ${parts.length} parts on layer "${layer}"`);
+        throw new Error(
+          `MeshBatch: failed to merge ${parts.length} parts on layer "${layer}"`,
+        );
       }
+
       geometry.computeBoundingSphere();
       merged.push(geometry);
-      object.add(new THREE.Mesh(geometry, getLayerMaterial(layer, useFacadeGradient)));
+
+      object.add(
+        new THREE.Mesh(geometry, getLayerMaterial(layer, useFacadeGradient)),
+      );
     }
 
     buckets = createLayerBuckets();
@@ -228,11 +297,14 @@ export const createMeshBatch = (
   return { addBox, addGeometry, build };
 };
 
-export const toStreetModel = (batch: IMeshBatch, width: number, depth: number): IStreetModel => {
+export const toStreetModel = (
+  batch: IMeshBatch,
+  width: number,
+  depth: number,
+): IStreetModel => {
   return { ...batch.build(), width, depth };
 };
 
-/** Buildings and houses: darker facades than the road batch. */
 export const createStreetMeshBatch = (): IMeshBatch =>
   createMeshBatch({
     vertexScale: SCENE_BRIGHTNESS.BUILDING_VERTEX,

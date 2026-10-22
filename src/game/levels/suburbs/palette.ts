@@ -1,23 +1,23 @@
 import type { ILevelPalette } from "../types";
 
-/** Suburbs: bright daytime sky, warm sun, soft haze. */
+/** Suburbs: warm California sunset golden hour, peach/apricot horizon, dusty mauve zenith, and soft purple shadows. */
 export const SUBURBS_PALETTE: ILevelPalette = {
-	skyMode: "day",
-	outputGamma: 1.08,
-	skyColor: 0x7eb8e8,
-	fogNear: 98,
-	fogFar: 395,
-	horizon: [0.48, 0.64, 0.86],
-	zenith: [0.22, 0.48, 0.88],
-	hemisphere: { sky: 0xb8d4f0, ground: 0x6a5a48, intensity: 0.92 },
-	keyLight: {
-		color: 0xfff8eb,
-		intensity: 1.55,
-		position: [28, 52, -18],
-	},
-	fillLight: {
-		color: 0x8ab4d8,
-		intensity: 0.48,
-		position: [-22, 18, 32],
-	},
+  skyMode: "day",
+  outputGamma: 1.14,
+  skyColor: 0xca6854,
+  fogNear: 95,
+  fogFar: 420,
+  horizon: [0.84, 0.52, 0.42],
+  zenith: [0.34, 0.22, 0.32],
+  hemisphere: { sky: 0x784a64, ground: 0x4e362c, intensity: 0.75 },
+  keyLight: {
+    color: 0xffd2aa,
+    intensity: 1.25,
+    position: [-26, 42, -18],
+  },
+  fillLight: {
+    color: 0x845474,
+    intensity: 0.42,
+    position: [22, 16, 26],
+  },
 };
