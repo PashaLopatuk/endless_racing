@@ -1,6 +1,6 @@
 export const CAMERA = {
-  FOV: 52,
-  FOV_MAX: 138,
+  FOV: 62,
+  FOV_MAX: 128,
   FOV_INCREASE_RESPONSE: 0.7,
   FOV_DECREASE_RESPONSE: 2.8,
   FOV_EPSILON: 0.1,
@@ -13,7 +13,7 @@ export const CAMERA = {
   FOLLOW: 3.2,
   FOLLOW_X_RATIO: 0.7,
   FOLLOW_X_SPEED_RATIO: 0.7,
-  MAX_SPEED_DISTANCE: 8,
+  MAX_SPEED_DISTANCE: 6,
 
   /** Max lateral shake at top speed (CSS px). */
   SHAKE_MAX_PX_X: 1.6,
