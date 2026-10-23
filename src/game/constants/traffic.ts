@@ -1,7 +1,7 @@
 export const TRAFFIC = {
   FIRST_ID: 1,
-  POOL_SIZE: 28,
-  MAX_ACTIVE: 76,
+  POOL_SIZE: 36,
+  MAX_ACTIVE: 30,
   /** Cap when the player crawls; avoids gridlock ahead. */
   MAX_ACTIVE_SLOW: 24,
 
